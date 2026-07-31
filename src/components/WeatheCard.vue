@@ -20,42 +20,72 @@ const getWeatherIcon = (status) => {
     </h4>
     <p style="margin: 0 0 10px 0; color: #444">현재 기온: {{ city.temp }}°C</p>
 
-    <!-- 조건부 렌더링 라벨 -->
+    <!-- 조건부 뱃지 렌더링 -->
     <span
-      v-if="city.temp >= 25"
+      v-if="city.status === '비'"
+      style="
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 4px 8px;
+        border-radius: 4px;
+        fontsize: 12px;
+        fontweight: bold;
+        display: inline-block;
+      "
+    >
+      🌧️ 촉촉한 비
+    </span>
+    <span
+      v-else-if="city.status === '구름'"
+      style="
+        background: #f1f5f9;
+        color: #475569;
+        padding: 4px 8px;
+        border-radius: 4px;
+        fontsize: 12px;
+        fontweight: bold;
+        display: inline-block;
+      "
+    >
+      ☁️ 구름 많음
+    </span>
+    <span
+      v-else-if="city.temp >= 28"
       style="
         background: #ffebee;
         color: #c62828;
         padding: 4px 8px;
         border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
+        fontsize: 12px;
+        fontweight: bold;
+        display: inline-block;
       "
     >
-      🔥 더움
+      🔥 쨍쨍한 무더위
     </span>
     <span
       v-else
       style="
-        background: #e3f2fd;
-        color: #1565c0;
+        background: #fef3c7;
+        color: #b45309;
         padding: 4px 8px;
         border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
+        fontsize: 12px;
+        fontweight: bold;
+        display: inline-block;
       "
     >
-      ❄️ 선선함
+      ☀️ 맑고 쾌적함
     </span>
 
-    <!-- 상세보기 버튼 (.stop으로 버블링 방지) -->
+    <!-- 상세보기 버튼 -->
     <button
       @click.stop="emit('click-detail', city.name, city.status)"
       style="
         float: right;
         padding: 6px 12px;
         cursor: pointer;
-        background: #f0f0f0;
+        background: #ffffff;
         border: 1px solid #ccc;
         border-radius: 4px;
         font-weight: bold;

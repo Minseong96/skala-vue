@@ -1,27 +1,32 @@
+<script setup>
+defineProps({
+  bgColor: { type: String, default: '#ffffff' },
+  borderColor: { type: String, default: '#e2e8f0' },
+})
+</script>
+
 <template>
   <div
-    style="
-      border: 1px solid #ddd;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 8px;
-      background: #ffffff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    "
+    :style="{
+      backgroundColor: bgColor,
+      borderColor: borderColor,
+      borderWidth: '1px',
+      borderStyle: 'solid',
+      padding: '15px',
+      marginBottom: '15px',
+      borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    }"
+    class="dashboard-card"
   >
-    <!-- 부모가 넣어주는 내용이 쏙 들어가는 자리 (Slot) -->
     <slot></slot>
   </div>
 </template>
 
 <style scoped>
-div {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-div:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 </style>
