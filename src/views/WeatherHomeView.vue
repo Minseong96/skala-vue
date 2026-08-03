@@ -1,8 +1,11 @@
 <script setup>
 import { ref, computed, watch, watchEffect } from 'vue'
-import BaseDashboardCard from '@/components/BaseDashboardCard.vue'
-import SearchBar from '@/components/SearchBar.vue'
-import WeatheCard from '@/components/WeatheCard.vue'
+import { useRouter } from 'vue-router'
+import BaseDashboardCard from '@/components/exercise/BaseDashboardCard.vue'
+import SearchBar from '@/components/exercise/SearchBar.vue'
+import WeatheCard from '@/components/exercise/WeatheCard.vue'
+
+const router = useRouter()
 
 const weatherList = ref([
   { id: 'city_01', name: '서울', temp: 28, status: '맑음' },
@@ -17,9 +20,7 @@ const searchQuery = ref('')
 const selectedCityInfo = ref('카드를 클릭하거나 검색해 보세요.')
 
 const filteredWeatherList = computed(() => {
-  if (!searchQuery.value) {
-    return weatherList.value
-  }
+  if (!searchQuery.value) return weatherList.value
   return weatherList.value.filter((city) =>
     city.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
   )
@@ -39,28 +40,21 @@ const handleSelectCard = (cityName) => {
   selectedCityInfo.value = `${cityName}이 선택되었습니다.`
 }
 
-const handleDetail = (cityName, status) => {
-  window.alert(`${cityName}의 현재 날씨는 [${status}] 상태입니다.`)
+// 🌟 상세보기 클릭 시 alert 대신 동적 라우터 경로로 페이지 이동!
+const handleDetail = (cityId, cityName, status) => {
+  router.push(`/weather/${cityId}`)
 }
 
 const getCardTheme = (status, temp) => {
-  if (status === '비') {
-    return { bg: '#f0f7ff', border: '#bae6fd' }
-  }
-  if (status === '구름') {
-    return { bg: '#f8fafc', border: '#cbd5e1' }
-  }
-  if (temp >= 28) {
-    return { bg: '#fff5f5', border: '#feb2b2' }
-  }
+  if (status === '비') return { bg: '#f0f7ff', border: '#bae6fd' }
+  if (status === '구름') return { bg: '#f8fafc', border: '#cbd5e1' }
+  if (temp >= 28) return { bg: '#fff5f5', border: '#feb2b2' }
   return { bg: '#fffbeb', border: '#fde68a' }
 }
 </script>
 
 <template>
   <div style="padding: 20px; max-width: 600px; margin: 0 auto; color: #333">
-    <h2 style="color: #fff">과제 3: 날씨 (컴포넌트 분리) 🌟</h2>
-
     <SearchBar v-model="searchQuery" />
 
     <h3 style="color: #fff; margin-top: 20px; margin-bottom: 10px">
@@ -94,7 +88,11 @@ const getCardTheme = (status, temp) => {
       :bgColor="getCardTheme(city.status, city.temp).bg"
       :borderColor="getCardTheme(city.status, city.temp).border"
     >
-      <WeatheCard :city="city" @select-card="handleSelectCard" @click-detail="handleDetail" />
+      <WeatheCard
+        :city="city"
+        @select-card="handleSelectCard"
+        @click-detail="(cityName, status) => handleDetail(city.id, cityName, status)"
+      />
     </BaseDashboardCard>
 
     <div
@@ -113,5 +111,3 @@ const getCardTheme = (status, temp) => {
     </div>
   </div>
 </template>
-
-<style scoped></style>
