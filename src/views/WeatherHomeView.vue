@@ -28,6 +28,7 @@ const selectedCityInfo = ref('카드를 터치하거나 도시를 검색하여 �
 const isLoading = ref(false)
 const errorMessage = ref('')
 const currentTime = ref('')
+const isGeoLoading = ref(false)
 
 const updateClock = () => {
   const now = new Date()
@@ -55,7 +56,8 @@ const formatCityHour = (dt, timezoneOffset = 0) => {
 }
 
 const formatTemp = (value) => {
-  const converted = configStore.unit === 'fahrenheit' ? Math.round((value * 9) / 5 + 32) : Math.round(value)
+  const converted =
+    configStore.unit === 'fahrenheit' ? Math.round((value * 9) / 5 + 32) : Math.round(value)
   return `${converted}${configStore.unitSymbol}`
 }
 
@@ -133,8 +135,97 @@ const fetchAllData = async () => {
   }
 }
 
-onMounted(() => {
-  fetchAllData()
+// 🌟 HTML5 Geolocation API Auto Detection
+const detectUserLocation = () => {
+  if (!('geolocation' in navigator)) return
+  isGeoLoading.value = true
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords
+      const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || '31df255e3ec6209feb7ed06f52a7a1f8'
+      try {
+        const [resWeather, resForecast] = await Promise.all([
+          axios.get(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric&lang=kr`,
+          ),
+          axios.get(
+            `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric&lang=kr`,
+          ),
+        ])
+
+        const data = resWeather.data
+        const forecastData = resForecast.data
+        const tz = forecastData.city.timezone
+        const geoName = `📍 내 위치 (${data.name || '현재 지점'})`
+        const geoId = 'city_user_geo'
+
+        const userGeoWeatherItem = {
+          id: geoId,
+          name: geoName,
+          temp: Math.round(data.main.temp),
+          status: data.weather[0].description,
+          icon: data.weather[0].icon,
+          isUserLoc: true,
+        }
+
+        weatherList.value = [
+          userGeoWeatherItem,
+          ...weatherList.value.filter((item) => item.id !== geoId),
+        ]
+
+        extraWeatherList.value = [
+          {
+            id: geoId,
+            name: geoName,
+            temp: Math.round(data.main.temp),
+            feelsLike: Math.round(data.main.feels_like),
+            humidity: data.main.humidity,
+            pressure: data.main.pressure,
+            sunrise: formatCityTime(data.sys.sunrise, data.timezone),
+            sunset: formatCityTime(data.sys.sunset, data.timezone),
+            status: data.weather[0].description,
+            icon: data.weather[0].icon,
+            isUserLoc: true,
+          },
+          ...extraWeatherList.value.filter((item) => item.id !== geoId),
+        ]
+
+        const hourly = forecastData.list.slice(0, 6).map((item) => ({
+          time: formatCityHour(item.dt, tz),
+          temp: Math.round(item.main.temp),
+          description: item.weather[0].description,
+          icon: item.weather[0].icon,
+        }))
+
+        timelineWeatherList.value = [
+          {
+            id: geoId,
+            name: geoName,
+            hourly,
+            isUserLoc: true,
+          },
+          ...timelineWeatherList.value.filter((item) => item.id !== geoId),
+        ]
+
+        selectedCityInfo.value = `현재 위치 감지 완료: [ ${geoName} ]`
+      } catch (err) {
+        console.warn('Geolocation weather fetch failed:', err)
+      } finally {
+        isGeoLoading.value = false
+      }
+    },
+    (err) => {
+      console.info('Geolocation permission skipped or denied:', err.message)
+      isGeoLoading.value = false
+    },
+    { timeout: 8000 },
+  )
+}
+
+onMounted(async () => {
+  await fetchAllData()
+  detectUserLocation()
   const timer = window.setInterval(updateClock, 1000)
   onBeforeUnmount(() => clearInterval(timer))
 })
@@ -158,6 +249,30 @@ const filteredTimelineList = computed(() => {
   return timelineWeatherList.value.filter((city) =>
     city.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
   )
+})
+
+// 🌟 Dynamic Atmosphere Theme Gradient based on Top Weather Condition
+const currentThemeGradient = computed(() => {
+  const topItem = weatherList.value[0]
+  if (!topItem) return 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 60%, #020617 100%)'
+
+  const status = (topItem.status || '').toLowerCase()
+  const icon = topItem.icon || ''
+
+  if (icon.endsWith('n')) {
+    // Starry Deep Night Atmosphere
+    return 'radial-gradient(ellipse at 50% 0%, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.95) 55%, #020617 100%)'
+  }
+  if (status.includes('비') || status.includes('소나기') || status.includes('뇌우')) {
+    // Rain / Storm Cool Blue Atmosphere
+    return 'radial-gradient(ellipse at 50% 0%, rgba(14, 116, 144, 0.85) 0%, rgba(15, 23, 42, 0.95) 55%, #020617 100%)'
+  }
+  if (status.includes('구름') || status.includes('흐림') || status.includes('안개')) {
+    // Cool Slate Cloud Atmosphere
+    return 'radial-gradient(ellipse at 50% 0%, rgba(71, 85, 105, 0.85) 0%, rgba(15, 23, 42, 0.95) 55%, #020617 100%)'
+  }
+  // Sunny Golden Atmosphere
+  return 'radial-gradient(ellipse at 50% 0%, rgba(217, 119, 6, 0.65) 0%, rgba(30, 27, 75, 0.85) 50%, #020617 100%)'
 })
 
 const handleSelectCard = (cityName) => {
@@ -185,23 +300,29 @@ const getCardBackground = (status = '') => {
 </script>
 
 <template>
-  <div class="apple-weather-wrapper">
+  <div class="apple-weather-wrapper" :style="{ background: currentThemeGradient }">
     <div class="apple-weather-app">
       <header class="apple-header">
         <div class="apple-header-top">
           <div class="apple-header-badges">
             <span class="apple-location">📍 Global Hub</span>
             <span class="apple-pill">Live Weather</span>
+            <button class="geo-btn" @click="detectUserLocation">
+              {{ isGeoLoading ? '📍 위치 감지 중...' : '🎯 내 위치 감지' }}
+            </button>
           </div>
           <span class="apple-time">{{ currentTime }}</span>
         </div>
         <div class="apple-title-row">
           <h1 class="apple-title">날씨</h1>
           <button class="apple-unit-pill" @click="configStore.toggleUnit()">
-            {{ configStore.unit === 'fahrenheit' ? '°F' : '°C' }} · {{ configStore.unit === 'fahrenheit' ? '화씨' : '섭씨' }}
+            {{ configStore.unit === 'fahrenheit' ? '°F' : '°C' }} ·
+            {{ configStore.unit === 'fahrenheit' ? '화씨' : '섭씨' }}
           </button>
         </div>
-        <p class="apple-subtitle">애플 웨더의 잔잔한 감성과 세련된 인터랙션을 담은 실시간 관측 대시보드입니다.</p>
+        <p class="apple-subtitle">
+          애플 웨더의 잔잔한 감성과 세련된 인터랙션을 담은 실시간 관측 대시보드입니다.
+        </p>
       </header>
 
       <div class="menu-tab-bar">
@@ -249,9 +370,7 @@ const getCardBackground = (status = '') => {
             :key="city.id"
             :style="{
               background: getCardBackground(city.status),
-              borderColor: getCardBorder(city.temp),
-              borderWidth: '1px',
-              borderStyle: 'solid',
+              borderColor: city.isUserLoc ? 'rgba(56, 189, 248, 0.8)' : getCardBorder(city.temp),
             }"
             class="apple-glass-card"
           >
@@ -272,12 +391,14 @@ const getCardBackground = (status = '') => {
                 <WeatherIcon :code="item.icon" size="24" />
                 <h3>{{ item.name }}</h3>
               </div>
-              <span class="extra-badge">일조 및 체감 분석</span>
+              <span class="extra-badge">{{ item.isUserLoc ? '📍 내 위치 실시간 분석' : '일조 및 체감 분석' }}</span>
             </div>
             <div class="extra-body">
               <div class="extra-row">
                 <span class="label">🌡️ 현재 / 체감</span>
-                <span class="value">{{ formatTemp(item.temp) }} (체감 {{ formatTemp(item.feelsLike) }})</span>
+                <span class="value"
+                  >{{ formatTemp(item.temp) }} (체감 {{ formatTemp(item.feelsLike) }})</span
+                >
               </div>
               <div class="extra-row">
                 <span class="label">🌅 일출 시각 (현지)</span>
@@ -309,7 +430,7 @@ const getCardBackground = (status = '') => {
           >
             <div class="extra-header">
               <h3>{{ city.name }}</h3>
-              <span class="extra-badge">3시간 단위 미래 예보</span>
+              <span class="extra-badge">{{ city.isUserLoc ? '📍 내 위치 3시간 예보' : '3시간 단위 미래 예보' }}</span>
             </div>
             <div class="fit-tl-grid">
               <div v-for="(hour, idx) in city.hourly" :key="idx" class="fit-tl-box">
@@ -334,9 +455,11 @@ const getCardBackground = (status = '') => {
 <style scoped>
 .apple-weather-wrapper {
   width: 100%;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   padding: 24px 0 60px;
+  transition: background 1.2s ease-in-out;
 }
 
 .apple-weather-app {
@@ -387,6 +510,24 @@ const getCardBackground = (status = '') => {
   color: #bae6fd;
 }
 
+.geo-btn {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #7dd3fc;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(18px);
+}
+
+.geo-btn:hover {
+  background: rgba(56, 189, 248, 0.35);
+  color: #ffffff;
+}
+
 .apple-time {
   font-size: 13px;
   font-weight: 600;
@@ -412,140 +553,101 @@ const getCardBackground = (status = '') => {
 }
 
 .apple-unit-pill {
-  border: none;
-  border-radius: 999px;
-  padding: 8px 12px;
-  background: rgba(59, 130, 246, 0.24);
-  color: #eff6ff;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #38bdf8;
   font-weight: 700;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+  backdrop-filter: blur(18px);
+  transition: background 0.2s ease;
+}
+
+.apple-unit-pill:hover {
+  background: rgba(30, 41, 59, 0.85);
 }
 
 .apple-subtitle {
+  font-size: 14px;
+  color: #94a3b8;
   margin: 0;
-  color: #cbd5e1;
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 .menu-tab-bar {
   display: flex;
-  background: rgba(15, 23, 42, 0.6);
-  padding: 4px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 8px;
   margin-bottom: 20px;
-  backdrop-filter: blur(25px);
 }
 
 .tab-btn {
   flex: 1;
-  background: transparent;
-  border: none;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.5);
   color: #94a3b8;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 10px 4px;
-  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  backdrop-filter: blur(16px);
+  transition: all 0.25s ease;
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #2563eb;
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+  border-color: #3b82f6;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
 }
 
 .apple-search-box {
-  background: rgba(15, 23, 42, 0.5);
-  padding: 16px;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(30px);
-  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.24);
   margin-bottom: 24px;
 }
 
 .apple-cards-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-
-.apple-glass-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.apple-glass-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.22);
-}
-
-.apple-state-view {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 180px;
-  border-radius: 24px;
-  padding: 24px;
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(24px);
-  color: #cbd5e1;
-}
-
-.apple-state-view.error {
-  color: #fda4af;
-}
-
-.apple-spinner {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3px solid rgba(255,255,255,0.16);
-  border-top-color: #38bdf8;
-  animation: spin 0.8s linear infinite;
+  gap: 16px;
 }
 
 .apple-extra-card,
 .apple-timeline-container-card {
-  border-radius: 24px;
-  padding: 18px;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 18px 38px rgba(2, 6, 23, 0.22);
+  border-radius: 24px;
+  padding: 20px;
   backdrop-filter: blur(24px);
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.2);
 }
 
 .extra-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .extra-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .extra-badge {
   font-size: 11px;
-  padding: 6px 8px;
-  background: rgba(59, 130, 246, 0.16);
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 4px 10px;
   border-radius: 999px;
-  color: #bfdbfe;
+  border: 1px solid rgba(56, 189, 248, 0.25);
 }
 
 .extra-body {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
@@ -553,55 +655,60 @@ const getCardBackground = (status = '') => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.4);
+}
+
+.label {
   font-size: 13px;
-  color: #e2e8f0;
+  color: #cbd5e1;
 }
 
-.extra-row .label {
-  color: #94a3b8;
-}
-
-.extra-row .value {
-  font-weight: 600;
-  text-align: right;
+.value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
 }
 
 .fit-tl-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .fit-tl-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .fit-tl-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  border-radius: 18px;
-  padding: 10px 8px;
+  justify-content: center;
+  padding: 12px 6px;
+  border-radius: 16px;
   min-height: 120px;
   text-align: center;
   color: #f8fafc;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(148, 163, 184, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .fit-time {
   font-size: 11px;
   color: #93c5fd;
   font-weight: 700;
-}
-
-.fit-img {
-  width: 42px;
-  height: 42px;
+  margin-bottom: 4px;
 }
 
 .fit-temp {
   font-size: 15px;
   font-weight: 800;
+  margin-top: 4px;
 }
 
 .fit-desc {
@@ -632,30 +739,27 @@ const getCardBackground = (status = '') => {
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.16);
 }
 
+.apple-state-view {
+  text-align: center;
+  padding: 40px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.apple-spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 12px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 640px) {
-  .apple-weather-wrapper {
-    padding-top: 12px;
-  }
-
-  .apple-weather-app {
-    padding: 18px 12px 24px;
-  }
-
-  .apple-title-row,
-  .apple-header-top,
-  .extra-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .fit-tl-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>
