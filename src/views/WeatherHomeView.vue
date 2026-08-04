@@ -8,6 +8,7 @@ import BaseDashboardCard from '@/components/exercise/BaseDashboardCard.vue'
 import SearchBar from '@/components/exercise/SearchBar.vue'
 import WeatheCard from '@/components/exercise/WeatheCard.vue'
 import WeatherIcon from '@/components/exercise/WeatherIcon.vue'
+import UIIcon from '@/components/exercise/UIIcon.vue'
 
 const router = useRouter()
 const configStore = useConfigStore()
@@ -157,7 +158,7 @@ const detectUserLocation = () => {
         const data = resWeather.data
         const forecastData = resForecast.data
         const tz = forecastData.city.timezone
-        const geoName = `📍 내 위치 (${data.name || '현재 지점'})`
+        const geoName = `내 위치 (${data.name || '현재 지점'})`
         const geoId = 'city_user_geo'
 
         const userGeoWeatherItem = {
@@ -305,10 +306,11 @@ const getCardBackground = (status = '') => {
       <header class="apple-header">
         <div class="apple-header-top">
           <div class="apple-header-badges">
-            <span class="apple-location">📍 Global Hub</span>
+            <span class="apple-location"><UIIcon name="location" size="13" color="#93c5fd" /> Global Hub</span>
             <span class="apple-pill">Live Weather</span>
             <button class="geo-btn" @click="detectUserLocation">
-              {{ isGeoLoading ? '📍 위치 감지 중...' : '🎯 내 위치 감지' }}
+              <UIIcon name="target" size="13" color="#7dd3fc" />
+              <span>{{ isGeoLoading ? '위치 감지 중...' : '내 위치 감지' }}</span>
             </button>
           </div>
           <span class="apple-time">{{ currentTime }}</span>
@@ -330,19 +332,19 @@ const getCardBackground = (status = '') => {
           :class="['tab-btn', { active: activeTab === 'weather' }]"
           @click="activeTab = 'weather'"
         >
-          🌍 실시간 날씨
+          <UIIcon name="globe" size="15" /> 실시간 날씨
         </button>
         <button
           :class="['tab-btn', { active: activeTab === 'extra' }]"
           @click="activeTab = 'extra'"
         >
-          🌅 일출·일몰
+          <UIIcon name="sun-horizon" size="15" /> 일출·일몰
         </button>
         <button
           :class="['tab-btn', { active: activeTab === 'timeline' }]"
           @click="activeTab = 'timeline'"
         >
-          ⏰ 3시간 타임라인
+          <UIIcon name="clock" size="15" /> 3시간 타임라인
         </button>
       </div>
 
@@ -391,25 +393,25 @@ const getCardBackground = (status = '') => {
                 <WeatherIcon :code="item.icon" size="24" />
                 <h3>{{ item.name }}</h3>
               </div>
-              <span class="extra-badge">{{ item.isUserLoc ? '📍 내 위치 실시간 분석' : '일조 및 체감 분석' }}</span>
+              <span class="extra-badge">{{ item.isUserLoc ? '내 위치 실시간 분석' : '일조 및 체감 분석' }}</span>
             </div>
             <div class="extra-body">
               <div class="extra-row">
-                <span class="label">🌡️ 현재 / 체감</span>
+                <span class="label"><UIIcon name="temp" size="14" color="#38bdf8" /> 현재 / 체감</span>
                 <span class="value"
                   >{{ formatTemp(item.temp) }} (체감 {{ formatTemp(item.feelsLike) }})</span
                 >
               </div>
               <div class="extra-row">
-                <span class="label">🌅 일출 시각 (현지)</span>
+                <span class="label"><UIIcon name="sun-horizon" size="14" color="#fbbf24" /> 일출 시각 (현지)</span>
                 <span class="value">{{ item.sunrise }}</span>
               </div>
               <div class="extra-row">
-                <span class="label">🌇 일몰 시각 (현지)</span>
+                <span class="label"><UIIcon name="sunset" size="14" color="#f97316" /> 일몰 시각 (현지)</span>
                 <span class="value">{{ item.sunset }}</span>
               </div>
               <div class="extra-row">
-                <span class="label">💧 습도 / 기압</span>
+                <span class="label"><UIIcon name="droplet" size="14" color="#38bdf8" /> 습도 / 기압</span>
                 <span class="value">{{ item.humidity }}% / {{ item.pressure }}hPa</span>
               </div>
             </div>
@@ -430,7 +432,7 @@ const getCardBackground = (status = '') => {
           >
             <div class="extra-header">
               <h3>{{ city.name }}</h3>
-              <span class="extra-badge">{{ city.isUserLoc ? '📍 내 위치 3시간 예보' : '3시간 단위 미래 예보' }}</span>
+              <span class="extra-badge">{{ city.isUserLoc ? '내 위치 3시간 예보' : '3시간 단위 미래 예보' }}</span>
             </div>
             <div class="fit-tl-grid">
               <div v-for="(hour, idx) in city.hourly" :key="idx" class="fit-tl-box">

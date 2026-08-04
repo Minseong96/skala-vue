@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { useConfigStore } from '@/stores/config'
 import WeatherIcon from '@/components/exercise/WeatherIcon.vue'
+import UIIcon from '@/components/exercise/UIIcon.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -156,7 +157,7 @@ onMounted(() => {
         <!-- 8-Slot Hourly Forecast Widget -->
         <div class="widget-card timeline-widget">
           <div class="widget-title">
-            <span class="title-text">⏰ 시간대별 예보</span>
+            <span class="title-text"><UIIcon name="clock" size="16" /> 시간대별 예보</span>
             <span class="widget-subtitle">현지 기준 3시간 간격</span>
           </div>
           <div class="timeline-scroll">
@@ -173,7 +174,7 @@ onMounted(() => {
           <!-- Sunrise / Sunset -->
           <div class="widget-card">
             <div class="widget-header">
-              <span class="widget-icon">🌅</span>
+              <span class="widget-icon"><UIIcon name="sun-horizon" size="18" color="#fbbf24" /></span>
               <span class="widget-label">일출 및 일몰 (현지)</span>
             </div>
             <div class="widget-body grid-2col">
@@ -195,7 +196,7 @@ onMounted(() => {
           <!-- Wind Widget -->
           <div class="widget-card">
             <div class="widget-header">
-              <span class="widget-icon">💨</span>
+              <span class="widget-icon"><UIIcon name="wind" size="18" color="#38bdf8" /></span>
               <span class="widget-label">바람 관측</span>
             </div>
             <div class="widget-body grid-2col">
@@ -213,7 +214,7 @@ onMounted(() => {
           <!-- Humidity Widget -->
           <div class="widget-card">
             <div class="widget-header">
-              <span class="widget-icon">💧</span>
+              <span class="widget-icon"><UIIcon name="droplet" size="18" color="#38bdf8" /></span>
               <span class="widget-label">습도 및 구름량</span>
             </div>
             <div class="widget-body grid-2col">
@@ -233,7 +234,7 @@ onMounted(() => {
           <!-- Pressure & Visibility -->
           <div class="widget-card">
             <div class="widget-header">
-              <span class="widget-icon">🧭</span>
+              <span class="widget-icon"><UIIcon name="compass" size="18" color="#a855f7" /></span>
               <span class="widget-label">기압 및 가시거리</span>
             </div>
             <div class="widget-body grid-2col">
