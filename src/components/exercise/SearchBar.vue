@@ -13,9 +13,11 @@ const emit = defineEmits(['update:modelValue'])
       type="text"
       :value="modelValue"
       @input="emit('update:modelValue', $event.target.value)"
-      placeholder="서울, 부산, 대구 또는 도시 이름"
+      placeholder="서울 또는 도시 이름"
     />
-    <p class="search-hint">검색 중인 도시: <strong>{{ modelValue || '전체 조회 중' }}</strong></p>
+    <p class="search-hint">
+      검색 중인 도시: <strong>{{ modelValue || '전체 조회 중' }}</strong>
+    </p>
   </div>
 </template>
 

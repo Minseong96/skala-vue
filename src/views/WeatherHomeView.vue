@@ -342,7 +342,9 @@ const getCardBackground = (status = '', icon = '') => {
       <header class="apple-header">
         <div class="apple-header-top">
           <div class="apple-header-badges">
-            <span class="apple-location"><UIIcon name="location" size="13" color="#93c5fd" /> Global Hub</span>
+            <span class="apple-location"
+              ><UIIcon name="location" size="13" color="#93c5fd" /> Global Hub</span
+            >
             <span class="apple-pill">Live Weather</span>
             <button class="geo-btn" @click="detectUserLocation">
               <UIIcon name="target" size="13" color="#7dd3fc" />
@@ -413,13 +415,20 @@ const getCardBackground = (status = '', icon = '') => {
                 :style="{
                   background: getCardBackground(city.status, city.icon),
                   borderColor: getCardBorder(city.temp),
-                  boxShadow: selectedCity?.id === city.id
-                    ? `0 0 0 2px #38bdf8, 0 0 24px ${getCardBorder(city.temp)}`
-                    : city.isUserLoc ? `0 0 16px ${getCardBorder(city.temp)}` : undefined,
+                  boxShadow:
+                    selectedCity?.id === city.id
+                      ? `0 0 0 2px #38bdf8, 0 0 24px ${getCardBorder(city.temp)}`
+                      : city.isUserLoc
+                        ? `0 0 16px ${getCardBorder(city.temp)}`
+                        : undefined,
                 }"
                 :class="['apple-glass-card', { active: selectedCity?.id === city.id }]"
               >
-                <WeatheCard :city="city" @select-card="handleSelectCard" @click-detail="handleDetail" />
+                <WeatheCard
+                  :city="city"
+                  @select-card="handleSelectCard"
+                  @click-detail="handleDetail"
+                />
               </BaseDashboardCard>
             </div>
           </template>
@@ -432,29 +441,40 @@ const getCardBackground = (status = '', icon = '') => {
             <div class="apple-cards-stack">
               <div v-for="item in filteredExtraList" :key="item.id" class="apple-extra-card">
                 <div class="extra-header">
-                  <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 8px">
                     <WeatherIcon :code="item.icon" size="24" />
                     <h3>{{ item.name }}</h3>
                   </div>
-                  <span class="extra-badge">{{ item.isUserLoc ? '내 위치 실시간 분석' : '일조 및 체감 분석' }}</span>
+                  <span class="extra-badge">{{
+                    item.isUserLoc ? '내 위치 실시간 분석' : '일조 및 체감 분석'
+                  }}</span>
                 </div>
                 <div class="extra-body">
                   <div class="extra-row">
-                    <span class="label"><UIIcon name="temp" size="14" color="#38bdf8" /> 현재 / 체감</span>
+                    <span class="label"
+                      ><UIIcon name="temp" size="14" color="#38bdf8" /> 현재 / 체감</span
+                    >
                     <span class="value"
                       >{{ formatTemp(item.temp) }} (체감 {{ formatTemp(item.feelsLike) }})</span
                     >
                   </div>
                   <div class="extra-row">
-                    <span class="label"><UIIcon name="sun-horizon" size="14" color="#fbbf24" /> 일출 시각 (현지)</span>
+                    <span class="label"
+                      ><UIIcon name="sun-horizon" size="14" color="#fbbf24" /> 일출 시각
+                      (현지)</span
+                    >
                     <span class="value">{{ item.sunrise }}</span>
                   </div>
                   <div class="extra-row">
-                    <span class="label"><UIIcon name="sunset" size="14" color="#f97316" /> 일몰 시각 (현지)</span>
+                    <span class="label"
+                      ><UIIcon name="sunset" size="14" color="#f97316" /> 일몰 시각 (현지)</span
+                    >
                     <span class="value">{{ item.sunset }}</span>
                   </div>
                   <div class="extra-row">
-                    <span class="label"><UIIcon name="droplet" size="14" color="#38bdf8" /> 습도 / 기압</span>
+                    <span class="label"
+                      ><UIIcon name="droplet" size="14" color="#38bdf8" /> 습도 / 기압</span
+                    >
                     <span class="value">{{ item.humidity }}% / {{ item.pressure }}hPa</span>
                   </div>
                 </div>
@@ -475,7 +495,9 @@ const getCardBackground = (status = '', icon = '') => {
               >
                 <div class="extra-header">
                   <h3>{{ city.name }}</h3>
-                  <span class="extra-badge">{{ city.isUserLoc ? '내 위치 3시간 예보' : '3시간 단위 미래 예보' }}</span>
+                  <span class="extra-badge">{{
+                    city.isUserLoc ? '내 위치 3시간 예보' : '3시간 단위 미래 예보'
+                  }}</span>
                 </div>
                 <div class="fit-tl-grid">
                   <div v-for="(hour, idx) in city.hourly" :key="idx" class="fit-tl-box">
@@ -503,12 +525,16 @@ const getCardBackground = (status = '', icon = '') => {
               <div class="side-big-temp">{{ formatTemp(selectedCity.temp) }}</div>
               <p class="side-status-desc">{{ selectedCity.status }}</p>
               <p class="side-feels-desc">
-                체감 {{ formatTemp(selectedCity.feelsLike) }} · 최고 {{ formatTemp(selectedCity.tempMax) }} / 최저 {{ formatTemp(selectedCity.tempMin) }}
+                체감 {{ formatTemp(selectedCity.feelsLike) }} · 최고
+                {{ formatTemp(selectedCity.tempMax) }} / 최저 {{ formatTemp(selectedCity.tempMin) }}
               </p>
             </div>
 
             <!-- Side Panel Hourly Forecast Widget -->
-            <div v-if="selectedCity.hourly && selectedCity.hourly.length > 0" class="side-widget-box">
+            <div
+              v-if="selectedCity.hourly && selectedCity.hourly.length > 0"
+              class="side-widget-box"
+            >
               <div class="side-widget-title">
                 <UIIcon name="clock" size="14" color="#38bdf8" />
                 <span>시간대별 예보 (현지)</span>
@@ -599,10 +625,12 @@ const getCardBackground = (status = '', icon = '') => {
 
             <!-- Side Panel Google Map Location Widget -->
             <div v-if="selectedCity.lat && selectedCity.lon" class="side-map-widget">
-              <div class="side-widget-title" style="margin-bottom: 8px;">
+              <div class="side-widget-title" style="margin-bottom: 8px">
                 <UIIcon name="location" size="14" color="#38bdf8" />
                 <span>구글 맵 위치 (Google Maps)</span>
-                <span class="map-coord-badge">{{ selectedCity.lat.toFixed(2) }}°, {{ selectedCity.lon.toFixed(2) }}°</span>
+                <span class="map-coord-badge"
+                  >{{ selectedCity.lat.toFixed(2) }}°, {{ selectedCity.lon.toFixed(2) }}°</span
+                >
               </div>
               <div class="map-iframe-container">
                 <iframe

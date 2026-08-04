@@ -100,10 +100,7 @@ const fxType = computed(() => {
         </div>
         <div class="range-group">
           <span class="range-text">최고: {{ displayMax }}° 최저: {{ displayMin }}°</span>
-          <button
-            class="detail-btn"
-            @click.stop="emit('click-detail', city.id || city.name, city)"
-          >
+          <button class="detail-btn" @click.stop="emit('click-detail', city.id || city.name, city)">
             상세보기 ›
           </button>
         </div>

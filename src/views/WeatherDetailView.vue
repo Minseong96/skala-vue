@@ -60,9 +60,7 @@ const currentCityMeta = computed(() => {
   // 3. Fallback for city_user_geo or raw param
   let fallbackName = param
   if (param === 'city_user_geo') {
-    fallbackName = userResolvedName.value
-      ? `내 위치 (${userResolvedName.value})`
-      : '내 위치'
+    fallbackName = userResolvedName.value ? `내 위치 (${userResolvedName.value})` : '내 위치'
   }
 
   return {
@@ -204,7 +202,9 @@ onMounted(() => {
           <!-- Sunrise / Sunset -->
           <div class="widget-card">
             <div class="widget-header">
-              <span class="widget-icon"><UIIcon name="sun-horizon" size="18" color="#fbbf24" /></span>
+              <span class="widget-icon"
+                ><UIIcon name="sun-horizon" size="18" color="#fbbf24"
+              /></span>
               <span class="widget-label">일출 및 일몰 (현지)</span>
             </div>
             <div class="widget-body grid-2col">
@@ -232,7 +232,9 @@ onMounted(() => {
             <div class="widget-body grid-2col">
               <div>
                 <div class="sub-label">현재 풍속</div>
-                <div class="big-val">{{ weatherInfo.wind.speed }} <span class="unit">m/s</span></div>
+                <div class="big-val">
+                  {{ weatherInfo.wind.speed }} <span class="unit">m/s</span>
+                </div>
               </div>
               <div>
                 <div class="sub-label">풍향</div>
@@ -250,7 +252,9 @@ onMounted(() => {
             <div class="widget-body grid-2col">
               <div>
                 <div class="sub-label">대기 습도</div>
-                <div class="big-val">{{ weatherInfo.main.humidity }}<span class="unit">%</span></div>
+                <div class="big-val">
+                  {{ weatherInfo.main.humidity }}<span class="unit">%</span>
+                </div>
               </div>
               <div>
                 <div class="sub-label">구름Cover</div>
@@ -277,7 +281,8 @@ onMounted(() => {
               <div>
                 <div class="sub-label">가시거리</div>
                 <div class="big-val">
-                  {{ Math.round((weatherInfo.visibility || 10000) / 1000) }}<span class="unit">km</span>
+                  {{ Math.round((weatherInfo.visibility || 10000) / 1000)
+                  }}<span class="unit">km</span>
                 </div>
               </div>
             </div>
@@ -285,13 +290,19 @@ onMounted(() => {
         </div>
 
         <!-- Google Maps Location Widget in Detail View -->
-        <div v-if="currentCityMeta.lat && currentCityMeta.lon" class="widget-card detail-map-widget">
-          <div class="widget-header" style="justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 8px;">
+        <div
+          v-if="currentCityMeta.lat && currentCityMeta.lon"
+          class="widget-card detail-map-widget"
+        >
+          <div class="widget-header" style="justify-content: space-between">
+            <div style="display: flex; align-items: center; gap: 8px">
               <span class="widget-icon"><UIIcon name="location" size="18" color="#38bdf8" /></span>
               <span class="widget-label">구글 맵 위치 지도 (Google Maps)</span>
             </div>
-            <span class="map-coord-tag">{{ currentCityMeta.lat.toFixed(4) }}° N, {{ currentCityMeta.lon.toFixed(4) }}° E</span>
+            <span class="map-coord-tag"
+              >{{ currentCityMeta.lat.toFixed(4) }}° N, {{ currentCityMeta.lon.toFixed(4) }}°
+              E</span
+            >
           </div>
           <div class="detail-map-container">
             <iframe
@@ -579,7 +590,6 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 700;
   color: #94a3b8;
-
 }
 
 .widget-body {

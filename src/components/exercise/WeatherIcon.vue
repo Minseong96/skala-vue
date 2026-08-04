@@ -23,7 +23,12 @@ const iconType = computed(() => {
 <template>
   <div class="ios-weather-icon" :style="{ width: `${size}px`, height: `${size}px` }">
     <!-- 01d: Clear Sun (Natural Golden iOS Sunlight) -->
-    <svg v-if="iconType === '01d'" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      v-if="iconType === '01d'"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
         <radialGradient id="sun-glow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="#FFE066" />
@@ -35,9 +40,22 @@ const iconType = computed(() => {
         </filter>
       </defs>
       <!-- Sun Core -->
-      <circle cx="32" cy="32" r="15" fill="url(#sun-glow)" filter="url(#sun-shadow)" class="sun-core-pulse" />
+      <circle
+        cx="32"
+        cy="32"
+        r="15"
+        fill="url(#sun-glow)"
+        filter="url(#sun-shadow)"
+        class="sun-core-pulse"
+      />
       <!-- Sun Rays -->
-      <g stroke="#FFA800" stroke-width="3" stroke-linecap="round" opacity="0.85" class="sun-rays-spin">
+      <g
+        stroke="#FFA800"
+        stroke-width="3"
+        stroke-linecap="round"
+        opacity="0.85"
+        class="sun-rays-spin"
+      >
         <line x1="32" y1="7" x2="32" y2="12" />
         <line x1="32" y1="52" x2="32" y2="57" />
         <line x1="7" y1="32" x2="12" y2="32" />
@@ -50,7 +68,12 @@ const iconType = computed(() => {
     </svg>
 
     <!-- 01n: Clear Night (Soft Glowing Silver Moon) -->
-    <svg v-else-if="iconType === '01n'" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      v-else-if="iconType === '01n'"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
         <linearGradient id="moon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#F8FAFC" />
@@ -69,7 +92,12 @@ const iconType = computed(() => {
     </svg>
 
     <!-- 02d: Few Clouds (Golden Sun + iOS Cloud) -->
-    <svg v-else-if="iconType === '02d'" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      v-else-if="iconType === '02d'"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
         <radialGradient id="sun-back" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="#FFE066" />
@@ -85,7 +113,13 @@ const iconType = computed(() => {
       </defs>
       <!-- Sun in background -->
       <circle cx="24" cy="22" r="12" fill="url(#sun-back)" class="sun-core-pulse" />
-      <g stroke="#FFA800" stroke-width="2.5" stroke-linecap="round" opacity="0.75" class="sun-rays-spin-sub">
+      <g
+        stroke="#FFA800"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        opacity="0.75"
+        class="sun-rays-spin-sub"
+      >
         <line x1="24" y1="5" x2="24" y2="8" />
         <line x1="8" y1="22" x2="11" y2="22" />
         <line x1="12.7" y1="10.7" x2="14.8" y2="12.8" />
@@ -101,7 +135,12 @@ const iconType = computed(() => {
     </svg>
 
     <!-- 02n: Few Clouds Night -->
-    <svg v-else-if="iconType === '02n'" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      v-else-if="iconType === '02n'"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
         <linearGradient id="cloud-night" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stop-color="#E2E8F0" />
@@ -121,7 +160,12 @@ const iconType = computed(() => {
     </svg>
 
     <!-- 03d, 03n, 04d, 04n: Scattered / Broken Clouds -->
-    <svg v-else-if="['03d','03n','04d','04n'].includes(iconType)" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      v-else-if="['03d', '03n', '04d', '04n'].includes(iconType)"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
         <linearGradient id="cloud-full" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stop-color="#F1F5F9" />
@@ -140,7 +184,12 @@ const iconType = computed(() => {
     </svg>
 
     <!-- 09d, 09n, 10d, 10n: Rain -->
-    <svg v-else-if="['09d','09n','10d','10n'].includes(iconType)" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      v-else-if="['09d', '09n', '10d', '10n'].includes(iconType)"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
         <linearGradient id="cloud-rain" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stop-color="#E2E8F0" />
@@ -157,20 +206,56 @@ const iconType = computed(() => {
         class="cloud-float-anim"
       />
       <!-- Raindrops with 3D drop motion -->
-      <rect x="22" y="46" width="3.5" height="9" rx="1.75" fill="url(#drop-grad)" transform="rotate(15 23.75 50.5)" class="raindrop-anim" />
-      <rect x="32" y="47" width="3.5" height="9" rx="1.75" fill="url(#drop-grad)" transform="rotate(15 33.75 51.5)" class="raindrop-anim-delay1" />
-      <rect x="42" y="46" width="3.5" height="9" rx="1.75" fill="url(#drop-grad)" transform="rotate(15 43.75 50.5)" class="raindrop-anim-delay2" />
+      <rect
+        x="22"
+        y="46"
+        width="3.5"
+        height="9"
+        rx="1.75"
+        fill="url(#drop-grad)"
+        transform="rotate(15 23.75 50.5)"
+        class="raindrop-anim"
+      />
+      <rect
+        x="32"
+        y="47"
+        width="3.5"
+        height="9"
+        rx="1.75"
+        fill="url(#drop-grad)"
+        transform="rotate(15 33.75 51.5)"
+        class="raindrop-anim-delay1"
+      />
+      <rect
+        x="42"
+        y="46"
+        width="3.5"
+        height="9"
+        rx="1.75"
+        fill="url(#drop-grad)"
+        transform="rotate(15 43.75 50.5)"
+        class="raindrop-anim-delay2"
+      />
     </svg>
 
     <!-- 11d, 11n: Thunderstorm -->
-    <svg v-else-if="['11d','11n'].includes(iconType)" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      v-else-if="['11d', '11n'].includes(iconType)"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
         <linearGradient id="cloud-storm" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stop-color="#94A3B8" />
           <stop offset="100%" stop-color="#334155" />
         </linearGradient>
       </defs>
-      <polygon points="32,38 25,50 31,50 28,60 38,46 32,46" fill="#FACC15" class="lightning-flash" />
+      <polygon
+        points="32,38 25,50 31,50 28,60 38,46 32,46"
+        fill="#FACC15"
+        class="lightning-flash"
+      />
       <path
         d="M20 40H46C51.5228 40 56 35.5228 56 30C56 24.7483 51.9427 20.4447 46.7909 20.0437C45.3951 14.285 40.1983 10 34 10C26.8203 10 21 15.8203 21 23C21 23.6841 21.053 24.3558 21.155 25.0101C17.0782 26.0205 14 29.6601 14 34C14 37.3137 17.5817 40 22 40Z"
         fill="url(#cloud-storm)"
@@ -178,7 +263,12 @@ const iconType = computed(() => {
     </svg>
 
     <!-- 13d, 13n: Snow -->
-    <svg v-else-if="['13d','13n'].includes(iconType)" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      v-else-if="['13d', '13n'].includes(iconType)"
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M20 42H46C51.5228 42 56 37.5228 56 32C56 26.7483 51.9427 22.4447 46.7909 22.0437C45.3951 16.285 40.1983 12 34 12C26.8203 12 21 17.8203 21 25C21 25.6841 21.053 26.3558 21.155 27.0101C17.0782 28.0205 14 31.6601 14 36C14 39.3137 17.5817 42 22 42Z"
         fill="#CBD5E1"
@@ -308,10 +398,13 @@ svg {
 }
 
 @keyframes flashLightning {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     opacity: 0.8;
   }
-  85%, 95% {
+  85%,
+  95% {
     opacity: 1;
     filter: drop-shadow(0 0 10px #facc15);
   }
