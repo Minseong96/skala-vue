@@ -114,6 +114,11 @@ const fetchAllData = async () => {
       const data = res.data
       const forecast = forecastResponses[index].data
       const tz = forecast.city.timezone
+
+      const forecastTemps = forecast.list.slice(0, 8).map((item) => item.main.temp)
+      const realMax = Math.max(data.main.temp_max, data.main.temp, ...forecastTemps)
+      const realMin = Math.min(data.main.temp_min, data.main.temp, ...forecastTemps)
+
       const hourly = forecast.list.slice(0, 8).map((item) => ({
         time: formatCityHour(item.dt, tz),
         temp: Math.round(item.main.temp),
@@ -125,8 +130,8 @@ const fetchAllData = async () => {
         id: citiesMeta[index].id,
         name: citiesMeta[index].name,
         temp: Math.round(data.main.temp),
-        tempMax: Math.round(data.main.temp_max),
-        tempMin: Math.round(data.main.temp_min),
+        tempMax: Math.round(realMax),
+        tempMin: Math.round(realMin),
         feelsLike: Math.round(data.main.feels_like),
         humidity: data.main.humidity,
         pressure: data.main.pressure,
@@ -186,6 +191,10 @@ const detectUserLocation = () => {
         const geoName = `내 위치 (${data.name || '현재 지점'})`
         const geoId = 'city_user_geo'
 
+        const forecastTemps = forecastData.list.slice(0, 8).map((item) => item.main.temp)
+        const realMax = Math.max(data.main.temp_max, data.main.temp, ...forecastTemps)
+        const realMin = Math.min(data.main.temp_min, data.main.temp, ...forecastTemps)
+
         const hourly = forecastData.list.slice(0, 8).map((item) => ({
           time: formatCityHour(item.dt, tz),
           temp: Math.round(item.main.temp),
@@ -197,8 +206,8 @@ const detectUserLocation = () => {
           id: geoId,
           name: geoName,
           temp: Math.round(data.main.temp),
-          tempMax: Math.round(data.main.temp_max),
-          tempMin: Math.round(data.main.temp_min),
+          tempMax: Math.round(realMax),
+          tempMin: Math.round(realMin),
           feelsLike: Math.round(data.main.feels_like),
           humidity: data.main.humidity,
           pressure: data.main.pressure,

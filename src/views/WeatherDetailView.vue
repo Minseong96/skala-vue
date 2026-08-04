@@ -114,6 +114,15 @@ const fetchAllDetailData = async () => {
     ])
 
     weatherInfo.value = resWeather.data
+
+    if (resForecast.data && resForecast.data.list) {
+      const forecastTemps = resForecast.data.list.slice(0, 8).map((item) => item.main.temp)
+      const realMax = Math.max(resWeather.data.main.temp_max, resWeather.data.main.temp, ...forecastTemps)
+      const realMin = Math.min(resWeather.data.main.temp_min, resWeather.data.main.temp, ...forecastTemps)
+      weatherInfo.value.main.temp_max = realMax
+      weatherInfo.value.main.temp_min = realMin
+    }
+
     if (resWeather.data && resWeather.data.name) {
       userResolvedName.value = resWeather.data.name
     }
