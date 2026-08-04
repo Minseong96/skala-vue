@@ -88,6 +88,49 @@ const formatTemp = (value) => {
   return `${converted}${configStore.unitSymbol}`
 }
 
+const formatWeatherCondition = (desc = '', icon = '') => {
+  if (!desc) return '맑음'
+  const text = desc.trim().toLowerCase()
+
+  if (text.includes('온흐림') || text.includes('overcast')) return '흐림'
+  if (text.includes('튼구름') || text.includes('조각구름') || text.includes('broken')) return '구름많음'
+  if (text.includes('스캐터드') || text.includes('scattered')) return '구름조금'
+  if (text.includes('적은 구름') || text.includes('few')) return '대체로 맑음'
+  if (text.includes('실비') || text.includes('가벼운 비') || text.includes('약한 비')) return '약한 비'
+  if (text.includes('소나기')) return '소나기'
+  if (text.includes('뇌우') || text.includes('천둥')) return '천둥번개'
+  if (text.includes('박무') || text.includes('안개') || text.includes('연무')) return '안개'
+  if (text.includes('맑음') || text.includes('clear')) return '맑음'
+  if (text.includes('비')) return '비'
+  if (text.includes('눈')) return '눈'
+
+  if (icon) {
+    const code = icon.substring(0, 2)
+    switch (code) {
+      case '01':
+        return '맑음'
+      case '02':
+        return '대체로 맑음'
+      case '03':
+        return '구름조금'
+      case '04':
+        return '구름많음'
+      case '09':
+        return '소나기'
+      case '10':
+        return '비'
+      case '11':
+        return '천둥번개'
+      case '13':
+        return '눈'
+      case '50':
+        return '안개'
+    }
+  }
+
+  return desc
+}
+
 const fetchAllData = async () => {
   isLoading.value = true
   const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || '31df255e3ec6209feb7ed06f52a7a1f8'
@@ -122,7 +165,7 @@ const fetchAllData = async () => {
       const hourly = forecast.list.slice(0, 8).map((item) => ({
         time: formatCityHour(item.dt, tz),
         temp: Math.round(item.main.temp),
-        description: item.weather[0].description,
+        description: formatWeatherCondition(item.weather[0].description, item.weather[0].icon),
         icon: item.weather[0].icon,
       }))
 
@@ -141,7 +184,7 @@ const fetchAllData = async () => {
         sunset: formatCityTime(data.sys.sunset, data.timezone),
         localTime: getCurrentCityTime(data.timezone),
         timezone: data.timezone,
-        status: data.weather[0].description,
+        status: formatWeatherCondition(data.weather[0].description, data.weather[0].icon),
         icon: data.weather[0].icon,
         lat: citiesMeta[index].lat,
         lon: citiesMeta[index].lon,
@@ -198,7 +241,7 @@ const detectUserLocation = () => {
         const hourly = forecastData.list.slice(0, 8).map((item) => ({
           time: formatCityHour(item.dt, tz),
           temp: Math.round(item.main.temp),
-          description: item.weather[0].description,
+          description: formatWeatherCondition(item.weather[0].description, item.weather[0].icon),
           icon: item.weather[0].icon,
         }))
 
@@ -217,7 +260,7 @@ const detectUserLocation = () => {
           sunset: formatCityTime(data.sys.sunset, data.timezone),
           localTime: getCurrentCityTime(data.timezone),
           timezone: data.timezone,
-          status: data.weather[0].description,
+          status: formatWeatherCondition(data.weather[0].description, data.weather[0].icon),
           icon: data.weather[0].icon,
           lat: latitude,
           lon: longitude,
