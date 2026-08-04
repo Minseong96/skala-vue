@@ -359,6 +359,10 @@ const getCardBackground = (status = '', icon = '') => {
               <UIIcon name="target" size="13" color="#7dd3fc" />
               <span>{{ isGeoLoading ? '위치 감지 중...' : '내 위치 감지' }}</span>
             </button>
+            <button class="geo-btn about-btn-pill" @click="router.push('/about')">
+              <UIIcon name="globe" size="13" color="#38bdf8" />
+              <span>서비스 소개</span>
+            </button>
           </div>
           <span class="apple-time">{{ currentTime }}</span>
         </div>
