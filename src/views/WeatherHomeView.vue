@@ -328,7 +328,7 @@ const getCardBackground = (status = '', icon = '') => {
           <span class="apple-time">{{ currentTime }}</span>
         </div>
         <div class="apple-title-row">
-          <h1 class="apple-title">날씨 대시보드</h1>
+          <h1 class="apple-title">Weather Studio</h1>
           <button class="apple-unit-pill" @click="configStore.toggleUnit()">
             {{ configStore.unit === 'fahrenheit' ? '°F' : '°C' }} ·
             {{ configStore.unit === 'fahrenheit' ? '화씨' : '섭씨' }}
