@@ -1,20 +1,24 @@
+<!-- src/views/WeatherDetailView.vue -->
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
+import { useConfigStore } from '@/stores/config'
+import WeatherIcon from '@/components/exercise/WeatherIcon.vue'
 
 const route = useRoute()
 const router = useRouter()
+const configStore = useConfigStore()
 
-// 상태 변수 정의
 const weatherInfo = ref(null)
-const isLoading = ref(false)
+const forecastList = ref([])
+const isLoading = ref(true)
 const errorMessage = ref('')
 
-// 🌟 URL로 넘어오는 모든 형태의 값(city_03, West-lafayette 등)을 커버하도록 매핑 보완
 const cityCoordinates = {
   city_01: { name: '서울특별시', lat: 37.5665, lon: 126.978 },
   서울: { name: '서울특별시', lat: 37.5665, lon: 126.978 },
+  서울특별시: { name: '서울특별시', lat: 37.5665, lon: 126.978 },
 
   city_03: { name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
   'West-lafayette': { name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
@@ -22,117 +26,539 @@ const cityCoordinates = {
 
   city_04: { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
   부산: { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
+  부산광역시: { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
 
   city_05: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
   대구: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
+  대구광역시: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
 }
 
-const currentCityMeta = cityCoordinates[route.params.cityId] || {
-  name: route.params.cityId || '알 수 없는 도시',
-  lat: 37.5665,
-  lon: 126.978,
+const currentCityMeta = computed(() => {
+  const param = route.params.cityId
+  return (
+    cityCoordinates[param] || {
+      name: param || '알 수 없는 도시',
+      lat: 37.5665,
+      lon: 126.978,
+    }
+  )
+})
+
+const formatCityTime = (timestamp, timezoneOffset = 0) => {
+  if (!timestamp) return '-'
+  const date = new Date((timestamp + timezoneOffset) * 1000)
+  const hours = date.getUTCHours()
+  const minutes = date.getUTCMinutes()
+  const period = hours >= 12 ? '오후' : '오전'
+  const displayHours = hours % 12 === 0 ? 12 : hours % 12
+  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes
+  return `${period} ${displayHours}:${formattedMinutes}`
 }
 
-// 🌟 핵심: 화면이 마운트될 때 OpenWeather API 호출!
-const fetchRealWeather = async () => {
+const formatCityHour = (dt, timezoneOffset = 0) => {
+  if (!dt) return '-'
+  const date = new Date((dt + timezoneOffset) * 1000)
+  const hours = date.getUTCHours()
+  const period = hours >= 12 ? '오후' : '오전'
+  const displayHours = hours % 12 === 0 ? 12 : hours % 12
+  return `${period} ${displayHours}시`
+}
+
+const formatTemp = (val) => {
+  if (val === undefined || val === null) return '-'
+  const converted =
+    configStore.unit === 'fahrenheit' ? Math.round((val * 9) / 5 + 32) : Math.round(val)
+  return `${converted}${configStore.unitSymbol}`
+}
+
+const fetchAllDetailData = async () => {
   isLoading.value = true
-  const API_KEY = '31df255e3ec6209feb7ed06f52a7a1f8'
-  const URL = `https://api.openweathermap.org/data/2.5/weather?lat=${currentCityMeta.lat}&lon=${currentCityMeta.lon}&appid=${API_KEY}&units=metric&lang=kr`
+  errorMessage.value = ''
+  const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || '31df255e3ec6209feb7ed06f52a7a1f8'
+  const city = currentCityMeta.value
 
   try {
-    const response = await axios.get(URL)
-    console.log('Axios 통신 성공 응답 전체:', response)
-    weatherInfo.value = response.data
-  } catch (error) {
-    console.error('통신 중 에러가 발생했습니다:', error)
-    errorMessage.value = '데이터를 가져오지 못했습니다. API 키나 네트워크를 확인하세요.'
+    const [resWeather, resForecast] = await Promise.all([
+      axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${city.lat}&lon=${city.lon}&appid=${API_KEY}&units=metric&lang=kr`,
+      ),
+      axios.get(
+        `https://api.openweathermap.org/data/2.5/forecast?lat=${city.lat}&lon=${city.lon}&appid=${API_KEY}&units=metric&lang=kr`,
+      ),
+    ])
+
+    weatherInfo.value = resWeather.data
+    const tz = resForecast.data.city.timezone
+    forecastList.value = resForecast.data.list.slice(0, 8).map((item) => ({
+      time: formatCityHour(item.dt, tz),
+      temp: Math.round(item.main.temp),
+      description: item.weather[0].description,
+      icon: item.weather[0].icon,
+    }))
+  } catch (err) {
+    console.error(err)
+    errorMessage.value = '실시간 기상 관측 데이터를 불러오는데 실패했습니다.'
   } finally {
     isLoading.value = false
   }
 }
 
 onMounted(() => {
-  fetchRealWeather()
+  fetchAllDetailData()
 })
 </script>
 
 <template>
-  <div
-    style="
-      padding: 30px 20px;
-      max-width: 600px;
-      margin: 0 auto;
-      background: #ffffff;
-      border-radius: 12px;
-      color: #1f2937;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    "
-  >
-    <h2>🌍 실시간 OpenWeather API 관측 정보</h2>
+  <div class="ios-detail-wrapper">
+    <div class="ios-detail-container">
+      <!-- Top Navigation -->
+      <header class="nav-bar">
+        <button class="back-btn" @click="router.push('/')">
+          <span class="arrow">‹</span> 실시간 대시보드
+        </button>
+        <div class="nav-right">
+          <span class="live-pill">LIVE OBSERVATION</span>
+          <button class="unit-toggle" @click="configStore.toggleUnit()">
+            {{ configStore.unit === 'fahrenheit' ? '°F' : '°C' }}
+          </button>
+        </div>
+      </header>
 
-    <!-- 로딩 중일 때 -->
-    <p
-      v-if="isLoading"
-      style="text-align: center; padding: 30px; color: #2563eb; font-weight: bold; font-size: 16px"
-    >
-      🔄 실시간 날씨 데이터를 불러오는 중입니다...
-    </p>
+      <!-- Loading State -->
+      <div v-if="isLoading" class="loading-state">
+        <div class="ios-spinner"></div>
+        <p>상세 날씨 관측 정보를 불러오는 중...</p>
+      </div>
 
-    <!-- 에러 발생 시 -->
-    <p
-      v-else-if="errorMessage"
-      style="color: #dc2626; font-weight: bold; text-align: center; padding: 30px; font-size: 16px"
-    >
-      {{ errorMessage }}
-    </p>
+      <!-- Error State -->
+      <div v-else-if="errorMessage" class="error-state">
+        <p>⚠️ {{ errorMessage }}</p>
+        <button class="retry-btn" @click="fetchAllDetailData">다시 시도</button>
+      </div>
 
-    <!-- 데이터 로드 성공 시 -->
-    <div
-      v-else-if="weatherInfo"
-      style="
-        margin-top: 20px;
-        background: #f8fafc;
-        padding: 25px;
-        border-radius: 8px;
-        border: 1px solid #cbd5e1;
-      "
-    >
-      <p style="font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #111827">
-        📍 지점 지역: {{ currentCityMeta.name }}
-      </p>
-      <p style="font-size: 16px; line-height: 1.6">
-        🌡️ <strong>현재 기온:</strong>
-        <span style="font-size: 22px; font-weight: bold; color: #b91c1c"
-          >{{ weatherInfo.main.temp }}°C</span
-        >
-        (체감 온도: {{ weatherInfo.main.feels_like }}°C)
-      </p>
-      <p style="font-size: 16px; line-height: 1.6">
-        ☁️ <strong>기상 현황:</strong> {{ weatherInfo.weather[0].description }}
-      </p>
-      <p style="font-size: 16px; line-height: 1.6">
-        💧 <strong>대기 습도:</strong> {{ weatherInfo.main.humidity }}%
-      </p>
-      <p style="font-size: 16px; line-height: 1.6">
-        💨 <strong>현재 풍속:</strong> {{ weatherInfo.wind.speed }} m/s
-      </p>
+      <!-- Main Detail Content -->
+      <div v-else-if="weatherInfo" class="detail-content">
+        <!-- Hero Section (Apple Weather Header) -->
+        <div class="hero-section">
+          <div class="hero-icon-box">
+            <WeatherIcon :code="weatherInfo.weather[0].icon" size="96" />
+          </div>
+          <h1 class="hero-city">{{ currentCityMeta.name }}</h1>
+          <div class="hero-temp-large">{{ formatTemp(weatherInfo.main.temp) }}</div>
+          <div class="hero-desc">{{ weatherInfo.weather[0].description }}</div>
+          <div class="hero-minmax">
+            체감 {{ formatTemp(weatherInfo.main.feels_like) }} · 최고
+            {{ formatTemp(weatherInfo.main.temp_max) }} / 최저
+            {{ formatTemp(weatherInfo.main.temp_min) }}
+          </div>
+        </div>
+
+        <!-- 8-Slot Hourly Forecast Widget -->
+        <div class="widget-card timeline-widget">
+          <div class="widget-title">
+            <span class="title-text">⏰ 시간대별 예보</span>
+            <span class="widget-subtitle">현지 기준 3시간 간격</span>
+          </div>
+          <div class="timeline-scroll">
+            <div v-for="(item, idx) in forecastList" :key="idx" class="timeline-item">
+              <span class="item-time">{{ item.time }}</span>
+              <WeatherIcon :code="item.icon" size="36" />
+              <span class="item-temp">{{ formatTemp(item.temp) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2x2 Grid Weather Widgets -->
+        <div class="widgets-grid">
+          <!-- Sunrise / Sunset -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <span class="widget-icon">🌅</span>
+              <span class="widget-label">일출 및 일몰 (현지)</span>
+            </div>
+            <div class="widget-body grid-2col">
+              <div>
+                <div class="sub-label">일출 시각</div>
+                <div class="big-val">
+                  {{ formatCityTime(weatherInfo.sys.sunrise, weatherInfo.timezone) }}
+                </div>
+              </div>
+              <div>
+                <div class="sub-label">일몰 시각</div>
+                <div class="big-val">
+                  {{ formatCityTime(weatherInfo.sys.sunset, weatherInfo.timezone) }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wind Widget -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <span class="widget-icon">💨</span>
+              <span class="widget-label">바람 관측</span>
+            </div>
+            <div class="widget-body grid-2col">
+              <div>
+                <div class="sub-label">현재 풍속</div>
+                <div class="big-val">{{ weatherInfo.wind.speed }} <span class="unit">m/s</span></div>
+              </div>
+              <div>
+                <div class="sub-label">풍향</div>
+                <div class="big-val">{{ weatherInfo.wind.deg }}<span class="unit">°</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Humidity Widget -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <span class="widget-icon">💧</span>
+              <span class="widget-label">습도 및 구름량</span>
+            </div>
+            <div class="widget-body grid-2col">
+              <div>
+                <div class="sub-label">대기 습도</div>
+                <div class="big-val">{{ weatherInfo.main.humidity }}<span class="unit">%</span></div>
+              </div>
+              <div>
+                <div class="sub-label">구름Cover</div>
+                <div class="big-val">
+                  {{ weatherInfo.clouds?.all || 0 }}<span class="unit">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pressure & Visibility -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <span class="widget-icon">🧭</span>
+              <span class="widget-label">기압 및 가시거리</span>
+            </div>
+            <div class="widget-body grid-2col">
+              <div>
+                <div class="sub-label">해수면 기압</div>
+                <div class="big-val">
+                  {{ weatherInfo.main.pressure }}<span class="unit">hPa</span>
+                </div>
+              </div>
+              <div>
+                <div class="sub-label">가시거리</div>
+                <div class="big-val">
+                  {{ Math.round((weatherInfo.visibility || 10000) / 1000) }}<span class="unit">km</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <button
-      @click="router.push('/')"
-      style="
-        margin-top: 30px;
-        padding: 12px 24px;
-        background: #1f2937;
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-      "
-    >
-      ← 메인 대시보드로 돌아가기
-    </button>
   </div>
 </template>
+
+<style scoped>
+.ios-detail-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 60px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+  color: #f8fafc;
+}
+
+.ios-detail-container {
+  width: min(100%, 720px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Nav bar */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(20px);
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #38bdf8;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.2s;
+}
+
+.back-btn:hover {
+  opacity: 0.8;
+}
+
+.arrow {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.unit-toggle {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.unit-toggle:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Loading & Error */
+.loading-state,
+.error-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+}
+
+.ios-spinner {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 16px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.retry-btn {
+  margin-top: 12px;
+  padding: 8px 18px;
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Hero Section */
+.hero-section {
+  text-align: center;
+  padding: 32px 20px 28px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 28px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-icon-box {
+  margin-bottom: 8px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+}
+
+.hero-city {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+}
+
+.hero-temp-large {
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 6px 0 8px;
+}
+
+.hero-desc {
+  font-size: 17px;
+  font-weight: 600;
+  color: #93c5fd;
+  margin-bottom: 8px;
+}
+
+.hero-minmax {
+  font-size: 13px;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+/* Widgets Base */
+.widget-card {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  padding: 18px 20px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Timeline Widget */
+.timeline-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.widget-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.widget-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.timeline-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.timeline-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.timeline-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.timeline-item {
+  min-width: 68px;
+  padding: 12px 8px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.item-time {
+  font-size: 11px;
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.item-temp {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Widgets Grid */
+.widgets-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 580px) {
+  .widgets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.widget-icon {
+  font-size: 16px;
+}
+
+.widget-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+
+}
+
+.widget-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sub-label {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 2px;
+}
+
+.big-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: #93c5fd;
+  margin-left: 2px;
+}
+</style>
