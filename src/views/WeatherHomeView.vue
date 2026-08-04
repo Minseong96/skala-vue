@@ -90,6 +90,9 @@ const fetchAllData = async () => {
         id: citiesMeta[index].id,
         name: citiesMeta[index].name,
         temp: Math.round(data.main.temp),
+        tempMax: Math.round(data.main.temp_max),
+        tempMin: Math.round(data.main.temp_min),
+        localTime: formatCityTime(data.dt, data.timezone),
         status: data.weather[0].description,
         icon: data.weather[0].icon,
       }
@@ -165,6 +168,9 @@ const detectUserLocation = () => {
           id: geoId,
           name: geoName,
           temp: Math.round(data.main.temp),
+          tempMax: Math.round(data.main.temp_max),
+          tempMin: Math.round(data.main.temp_min),
+          localTime: formatCityTime(data.dt, data.timezone),
           status: data.weather[0].description,
           icon: data.weather[0].icon,
           lat: latitude,
@@ -302,18 +308,26 @@ const handleDetail = (cityId, cityObj) => {
 }
 
 const getCardBorder = (temp) => {
-  return temp >= 28 ? 'rgba(244, 63, 94, 0.6)' : 'rgba(255, 255, 255, 0.2)'
+  if (temp === undefined || temp === null) return 'rgba(255, 255, 255, 0.2)'
+  if (temp >= 33) return 'rgba(244, 63, 94, 0.85)' // 33°C+ Extreme Heat (Vivid Red)
+  if (temp >= 28) return 'rgba(249, 115, 22, 0.85)' // 28°C~32°C Hot (Warm Orange)
+  if (temp >= 20) return 'rgba(56, 189, 248, 0.6)' // 20°C~27°C Mild (Sky Blue)
+  if (temp >= 10) return 'rgba(99, 102, 241, 0.65)' // 10°C~19°C Cool (Indigo)
+  return 'rgba(168, 85, 247, 0.75)' // <10°C Cold (Purple/Ice)
 }
 
-const getCardBackground = (status = '') => {
+const getCardBackground = (status = '', icon = '') => {
   const label = status.toLowerCase()
-  if (label.includes('비') || label.includes('소나기')) {
-    return 'linear-gradient(135deg, rgba(14, 116, 144, 0.38) 0%, rgba(15, 23, 42, 0.72) 100%)'
+  if (icon.endsWith('n')) {
+    return 'linear-gradient(135deg, rgba(27, 38, 59, 0.95) 0%, rgba(13, 21, 39, 0.95) 60%, rgba(6, 11, 20, 0.98) 100%)'
+  }
+  if (label.includes('비') || label.includes('소나기') || label.includes('뇌우')) {
+    return 'linear-gradient(135deg, rgba(36, 48, 66, 0.95) 0%, rgba(22, 32, 46, 0.95) 60%, rgba(11, 17, 26, 0.98) 100%)'
   }
   if (label.includes('구름') || label.includes('흐림') || label.includes('안개')) {
-    return 'linear-gradient(135deg, rgba(71, 85, 105, 0.42) 0%, rgba(15, 23, 42, 0.72) 100%)'
+    return 'linear-gradient(135deg, rgba(61, 74, 93, 0.95) 0%, rgba(40, 51, 66, 0.95) 60%, rgba(24, 34, 48, 0.98) 100%)'
   }
-  return 'linear-gradient(135deg, rgba(217, 119, 6, 0.35) 0%, rgba(15, 23, 42, 0.72) 100%)'
+  return 'linear-gradient(135deg, rgba(79, 150, 216, 0.95) 0%, rgba(53, 126, 189, 0.95) 50%, rgba(30, 91, 166, 0.98) 100%)'
 }
 </script>
 
@@ -388,8 +402,9 @@ const getCardBackground = (status = '') => {
             v-for="city in filteredWeatherList"
             :key="city.id"
             :style="{
-              background: getCardBackground(city.status),
-              borderColor: city.isUserLoc ? 'rgba(56, 189, 248, 0.8)' : getCardBorder(city.temp),
+              background: getCardBackground(city.status, city.icon),
+              borderColor: getCardBorder(city.temp),
+              boxShadow: city.isUserLoc ? `0 0 20px ${getCardBorder(city.temp)}` : undefined,
             }"
             class="apple-glass-card"
           >

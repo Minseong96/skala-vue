@@ -11,16 +11,23 @@ const props = defineProps({
 const emit = defineEmits(['select-card', 'click-detail'])
 const configStore = useConfigStore()
 
-const displayTemp = computed(() => {
-  const rawTemp = props.city?.temp
-  if (rawTemp === undefined || rawTemp === null) return '-'
+const formatVal = (val) => {
+  if (val === undefined || val === null) return '-'
   if (configStore.unit === 'fahrenheit') {
-    return Math.round((rawTemp * 9) / 5 + 32)
+    return Math.round((val * 9) / 5 + 32)
   }
-  return rawTemp
-})
+  return Math.round(val)
+}
 
-// Determine FX category
+const displayTemp = computed(() => formatVal(props.city?.temp))
+const displayMax = computed(() =>
+  formatVal(props.city?.tempMax ?? (props.city?.temp !== undefined ? props.city.temp + 2 : null)),
+)
+const displayMin = computed(() =>
+  formatVal(props.city?.tempMin ?? (props.city?.temp !== undefined ? props.city.temp - 3 : null)),
+)
+
+// Determine FX category for background sky atmosphere
 const fxType = computed(() => {
   const status = (props.city?.status || '').toLowerCase()
   const icon = props.city?.icon || ''
@@ -34,223 +41,257 @@ const fxType = computed(() => {
 </script>
 
 <template>
-  <div class="weather-card" @click="emit('select-card', city.name)">
-    <!-- 🌟 Dynamic Weather Atmosphere Background Overlay -->
-    <div :class="['card-weather-fx', fxType]">
-      <!-- Sun Flare FX -->
+  <div class="apple-weather-card" @click="emit('select-card', city.name)">
+    <!-- 🌟 Dynamic Apple Weather Sky Atmosphere Overlay -->
+    <div :class="['card-sky-fx', fxType]">
+      <!-- Sunny Lens Flare & Light Rays -->
       <template v-if="fxType === 'sun'">
-        <div class="sun-flare"></div>
-        <div class="sun-ray ray-1"></div>
-        <div class="sun-ray ray-2"></div>
+        <div class="sun-flare-main"></div>
+        <div class="sun-light-ray ray-a"></div>
+        <div class="sun-light-ray ray-b"></div>
       </template>
 
-      <!-- Night Stars FX -->
+      <!-- Night Stars & Moon Glow -->
       <template v-else-if="fxType === 'night'">
-        <div class="star star-1">✦</div>
-        <div class="star star-2">✦</div>
-        <div class="star star-3">✦</div>
-        <div class="star star-4">✦</div>
+        <div class="moon-glow-bg"></div>
+        <div class="night-star s1">✦</div>
+        <div class="night-star s2">✦</div>
+        <div class="night-star s3">✦</div>
       </template>
 
-      <!-- Rain FX -->
+      <!-- Rain Streaks -->
       <template v-else-if="fxType === 'rain' || fxType === 'storm'">
-        <div class="rain-drop drop-1"></div>
-        <div class="rain-drop drop-2"></div>
-        <div class="rain-drop drop-3"></div>
-        <div class="rain-drop drop-4"></div>
-        <div class="rain-drop drop-5"></div>
+        <div class="rain-streak r1"></div>
+        <div class="rain-streak r2"></div>
+        <div class="rain-streak r3"></div>
+        <div class="rain-streak r4"></div>
+        <div class="rain-streak r5"></div>
       </template>
 
-      <!-- Cloud FX -->
+      <!-- Floating Cloud Layers -->
       <template v-else-if="fxType === 'cloud'">
-        <div class="cloud-puff puff-1"></div>
-        <div class="cloud-puff puff-2"></div>
+        <div class="cloud-puff c1"></div>
+        <div class="cloud-puff c2"></div>
+        <div class="cloud-puff c3"></div>
       </template>
     </div>
 
-    <!-- Main Card Content -->
-    <div class="card-content">
-      <div class="card-top">
-        <div>
-          <h4 style="display: flex; align-items: center; gap: 8px;">
-            <WeatherIcon :code="city.icon || '01d'" size="26" />
+    <!-- Apple Weather Card Content -->
+    <div class="apple-card-content">
+      <!-- Top Row: City Name + Subtitle (Left), Temp (Right) -->
+      <div class="apple-card-header">
+        <div class="city-info-group">
+          <h3 class="city-title">
             <span>{{ city.name }}</span>
-            <span v-if="city.isUserLoc" class="user-loc-badge">내 위치</span>
-          </h4>
-          <p class="muted">{{ city.status }}</p>
+            <span v-if="city.isUserLoc" class="user-badge">내 위치</span>
+          </h3>
+          <p class="city-subtitle">
+            {{ city.isUserLoc ? '현재 위치' : city.localTime || '현지 시각' }}
+          </p>
         </div>
-        <div class="temp-pill">{{ displayTemp }}{{ configStore.unitSymbol }}</div>
+        <div class="city-temp-big">{{ displayTemp }}°</div>
       </div>
 
-      <div class="card-bottom">
-        <span class="chip">
-          {{
-            city.status.includes('비')
-              ? '🌧️ 촉촉한 비'
-              : city.status.includes('구름') || city.status.includes('흐림')
-                ? '☁️ 부드러운 구름'
-                : '☀️ 맑고 선선한 공기'
-          }}
-        </span>
-        <button @click.stop="emit('click-detail', city.id || city.name, city)">상세보기 ›</button>
+      <!-- Bottom Row: Condition (Left), High / Low Range (Right) -->
+      <div class="apple-card-footer">
+        <div class="condition-group">
+          <WeatherIcon :code="city.icon || '01d'" size="22" />
+          <span class="condition-text">{{ city.status }}</span>
+        </div>
+        <div class="range-group">
+          <span class="range-text">최고: {{ displayMax }}° 최저: {{ displayMin }}°</span>
+          <button
+            class="detail-btn"
+            @click.stop="emit('click-detail', city.id || city.name, city)"
+          >
+            상세보기 ›
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.weather-card {
+.apple-weather-card {
   position: relative;
-  cursor: pointer;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 22px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 6px;
 }
 
-.card-content {
+.apple-card-content {
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  justify-content: space-between;
+  min-height: 96px;
 }
 
-.user-loc-badge {
-  font-size: 10px;
-  font-weight: 700;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.2);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 2px 7px;
-  border-radius: 999px;
-  margin-left: 2px;
-}
-
-.card-top {
+/* Header */
+.apple-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
 }
 
-h4 {
-  margin: 0 0 4px;
-  font-size: 18px;
-  font-weight: 800;
-  color: #f8fafc;
+.city-info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.muted {
+.city-title {
   margin: 0;
-  color: #cbd5e1;
-  font-size: 13px;
-}
-
-.temp-pill {
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 16px;
+  font-size: 21px;
+  font-weight: 700;
   color: #ffffff;
-  white-space: nowrap;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-.card-bottom {
+.user-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.25);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.city-subtitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.city-temp-big {
+  font-size: 46px;
+  font-weight: 300;
+  color: #ffffff;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Footer */
+.apple-card-footer {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.condition-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.condition-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.range-group {
+  display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.chip {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #e0f2fe;
-  padding: 6px 12px;
-  border-radius: 999px;
+.range-text {
   font-size: 12px;
-  font-weight: 700;
-  backdrop-filter: blur(10px);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-button {
-  border: none;
-  border-radius: 999px;
-  padding: 7px 14px;
-  background: rgba(255, 255, 255, 0.18);
+.detail-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   color: #ffffff;
-  cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  transition: all 0.2s ease;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
   backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
 }
 
-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+.detail-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
   transform: translateX(2px);
 }
 
-/* 🌟 DYNAMIC ATMOSPHERE FX LAYER */
-.card-weather-fx {
+/* 🌟 DYNAMIC ATMOSPHERE SKY OVERLAY */
+.card-sky-fx {
   position: absolute;
-  inset: 0;
+  inset: -10px;
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
 }
 
-/* ☀️ Sun FX */
-.sun-flare {
+/* ☀️ Sunny Flare */
+.sun-flare-main {
   position: absolute;
-  top: -25px;
-  right: -25px;
-  width: 130px;
-  height: 130px;
+  top: -30px;
+  right: 60px;
+  width: 140px;
+  height: 140px;
   background: radial-gradient(
     circle,
-    rgba(253, 224, 71, 0.5) 0%,
-    rgba(249, 115, 22, 0.18) 50%,
-    transparent 70%
+    rgba(255, 245, 180, 0.5) 0%,
+    rgba(255, 190, 80, 0.2) 50%,
+    transparent 75%
   );
   border-radius: 50%;
-  animation: sunGlow 4s ease-in-out infinite alternate;
+  animation: sunPulse 4s ease-in-out infinite alternate;
 }
 
-.sun-ray {
+.sun-light-ray {
   position: absolute;
-  top: -10px;
-  right: 10px;
-  width: 140px;
+  top: -20px;
+  right: 80px;
+  width: 160px;
   height: 2px;
-  background: linear-gradient(90deg, rgba(253, 224, 71, 0.4), transparent);
+  background: linear-gradient(90deg, rgba(255, 250, 200, 0.5), transparent);
   transform-origin: right center;
 }
-
-.ray-1 {
-  transform: rotate(25deg);
-  animation: rayPulse 3.5s ease-in-out infinite alternate;
+.ray-a {
+  transform: rotate(30deg);
+  animation: rayGlow 3s ease-in-out infinite alternate;
 }
-.ray-2 {
-  transform: rotate(45deg);
-  animation: rayPulse 4.5s ease-in-out 0.5s infinite alternate;
+.ray-b {
+  transform: rotate(50deg);
+  animation: rayGlow 4.5s ease-in-out 0.5s infinite alternate;
 }
 
-@keyframes sunGlow {
+@keyframes sunPulse {
   from {
-    transform: scale(0.9);
-    opacity: 0.7;
+    transform: scale(0.95);
+    opacity: 0.8;
   }
   to {
-    transform: scale(1.25);
+    transform: scale(1.2);
     opacity: 1;
   }
 }
 
-@keyframes rayPulse {
+@keyframes rayGlow {
   from {
     opacity: 0.3;
   }
@@ -259,84 +300,86 @@ button:hover {
   }
 }
 
-/* 🌙 Night FX */
-.star {
+/* 🌙 Night Moon Glow & Stars */
+.moon-glow-bg {
+  position: absolute;
+  top: -20px;
+  right: 40px;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(226, 232, 240, 0.3) 0%, transparent 65%);
+  border-radius: 50%;
+}
+
+.night-star {
   position: absolute;
   color: #f8fafc;
-  font-size: 11px;
-  opacity: 0.6;
+  font-size: 10px;
 }
-
-.star-1 {
-  top: 15%;
+.s1 {
+  top: 20%;
+  right: 25%;
+  animation: starFlicker 2.2s infinite alternate;
+}
+.s2 {
+  top: 40%;
+  right: 40%;
+  animation: starFlicker 3s 0.6s infinite alternate;
+}
+.s3 {
+  top: 65%;
   right: 20%;
-  animation: starTwinkle 2s infinite alternate;
-}
-.star-2 {
-  top: 45%;
-  right: 35%;
-  animation: starTwinkle 2.8s 0.5s infinite alternate;
-}
-.star-3 {
-  top: 70%;
-  right: 15%;
-  animation: starTwinkle 2.2s 1s infinite alternate;
-}
-.star-4 {
-  top: 25%;
-  right: 50%;
-  animation: starTwinkle 3.2s 1.5s infinite alternate;
+  animation: starFlicker 2.5s 1.2s infinite alternate;
 }
 
-@keyframes starTwinkle {
+@keyframes starFlicker {
   from {
     opacity: 0.2;
     transform: scale(0.8);
   }
   to {
-    opacity: 1;
-    transform: scale(1.3);
-    filter: drop-shadow(0 0 4px #ffffff);
+    opacity: 0.9;
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 3px #ffffff);
   }
 }
 
-/* 🌧️ Rain FX */
-.rain-drop {
+/* 🌧️ Rain Streaks */
+.rain-streak {
   position: absolute;
-  width: 1.5px;
-  height: 14px;
-  background: linear-gradient(180deg, rgba(56, 189, 248, 0.7), rgba(255, 255, 255, 0.2));
+  width: 1px;
+  height: 18px;
+  background: linear-gradient(180deg, rgba(186, 230, 253, 0.65), transparent);
   transform: rotate(15deg);
-  animation: cardRain 1.2s linear infinite;
+  animation: rainStreak 1.1s linear infinite;
 }
-
-.drop-1 {
+.r1 {
   top: -20px;
   right: 15%;
   animation-delay: 0s;
 }
-.drop-2 {
+.r2 {
   top: -20px;
   right: 35%;
-  animation-delay: 0.25s;
+  animation-delay: 0.2s;
 }
-.drop-3 {
+.r3 {
   top: -20px;
   right: 55%;
-  animation-delay: 0.5s;
+  animation-delay: 0.4s;
 }
-.drop-4 {
+.r4 {
   top: -20px;
   right: 75%;
-  animation-delay: 0.75s;
+  animation-delay: 0.6s;
 }
-.drop-5 {
+.r5 {
   top: -20px;
-  right: 25%;
-  animation-delay: 1s;
+  right: 40%;
+  animation-delay: 0.8s;
 }
 
-@keyframes cardRain {
+@keyframes rainStreak {
   0% {
     transform: translateY(0) rotate(15deg);
     opacity: 0;
@@ -345,41 +388,56 @@ button:hover {
     opacity: 0.8;
   }
   100% {
-    transform: translateY(120px) rotate(15deg);
+    transform: translateY(130px) rotate(15deg);
     opacity: 0;
   }
 }
 
-/* ☁️ Cloud FX */
+/* ☁️ Cloud Layers */
 .cloud-puff {
   position: absolute;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  filter: blur(8px);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(226, 232, 240, 0.22) 75%,
+    transparent 100%
+  );
+  border-radius: 60px;
+  filter: blur(4px);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.25);
+  pointer-events: none;
 }
 
-.puff-1 {
-  width: 90px;
-  height: 60px;
-  top: 10px;
-  right: -10px;
-  animation: cloudDrift 6s ease-in-out infinite alternate;
-}
-
-.puff-2 {
-  width: 110px;
+.c1 {
+  width: 140px;
   height: 70px;
-  bottom: -20px;
-  right: 40px;
-  animation: cloudDrift 8s ease-in-out 1s infinite alternate-reverse;
+  top: 5px;
+  right: -10px;
+  animation: cloudMove 7s ease-in-out infinite alternate;
 }
 
-@keyframes cloudDrift {
+.c2 {
+  width: 160px;
+  height: 80px;
+  bottom: -15px;
+  right: 50px;
+  animation: cloudMove 9.5s ease-in-out 1s infinite alternate-reverse;
+}
+
+.c3 {
+  width: 110px;
+  height: 55px;
+  top: 30px;
+  right: 120px;
+  animation: cloudMove 6s ease-in-out 0.4s infinite alternate;
+}
+
+@keyframes cloudMove {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-15px);
+    transform: translateX(-22px);
   }
 }
 </style>
