@@ -23,15 +23,18 @@ const cityCoordinates = {
 
   city_03: { name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
   'West-lafayette': { name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
-  'West Lafayette': { name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
 
-  city_04: { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
-  부산: { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
-  부산광역시: { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
+  city_tokyo: { name: '도쿄', lat: 35.6762, lon: 139.6503 },
+  도쿄: { name: '도쿄', lat: 35.6762, lon: 139.6503 },
+  Tokyo: { name: '도쿄', lat: 35.6762, lon: 139.6503 },
 
-  city_05: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
-  대구: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
-  대구광역시: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
+  city_paris: { name: '파리', lat: 48.8566, lon: 2.3522 },
+  파리: { name: '파리', lat: 48.8566, lon: 2.3522 },
+  Paris: { name: '파리', lat: 48.8566, lon: 2.3522 },
+
+  city_moscow: { name: '모스크바', lat: 55.7558, lon: 37.6173 },
+  모스크바: { name: '모스크바', lat: 55.7558, lon: 37.6173 },
+  Moscow: { name: '모스크바', lat: 55.7558, lon: 37.6173 },
 }
 
 const userResolvedName = ref('')

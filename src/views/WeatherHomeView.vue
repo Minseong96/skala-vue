@@ -16,8 +16,9 @@ const configStore = useConfigStore()
 const citiesMeta = [
   { id: 'city_01', name: '서울특별시', lat: 37.5665, lon: 126.978 },
   { id: 'city_03', name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
-  { id: 'city_04', name: '부산광역시', lat: 35.1796, lon: 129.0756 },
-  { id: 'city_05', name: '대구광역시', lat: 35.8714, lon: 128.6014 },
+  { id: 'city_tokyo', name: '도쿄', lat: 35.6762, lon: 139.6503 },
+  { id: 'city_paris', name: '파리', lat: 48.8566, lon: 2.3522 },
+  { id: 'city_moscow', name: '모스크바', lat: 55.7558, lon: 37.6173 },
 ]
 
 const weatherList = ref([])
