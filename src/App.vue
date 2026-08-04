@@ -5,51 +5,98 @@ import UnitToggler from '@/components/exercise/UnitToggler.vue'
 </script>
 
 <template>
-  <!-- 🌟 전체 배경에 밝은 파스텔 블루 적용 -->
   <div class="app-container">
     <header class="app-header">
-      <!-- ... 헤더 내용 동일 ... -->
-      <div>
-        <h2 style="color: #1f2937; margin: 0 0 5px 0; font-size: 18px">과제 5: 스토어 적용 🌟</h2>
-        <nav>
-          <RouterLink
-            to="/"
-            style="margin-right: 15px; color: #2563eb; font-weight: bold; text-decoration: none"
-            >날씨 대시보드</RouterLink
-          >
-          |
-          <RouterLink
-            to="/about"
-            style="margin-left: 15px; color: #2563eb; font-weight: bold; text-decoration: none"
-            >서비스 소개</RouterLink
-          >
+      <div class="header-left">
+        <h2 class="header-title">Weather Studio</h2>
+        <nav class="header-nav">
+          <RouterLink to="/" class="nav-link">날씨 대시보드</RouterLink>
+          <span class="divider">/</span>
+          <RouterLink to="/about" class="nav-link">서비스 소개</RouterLink>
         </nav>
       </div>
       <UnitToggler />
     </header>
 
-    <RouterView />
+    <main class="main-content">
+      <RouterView />
+    </main>
   </div>
 </template>
 
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #1b365d 0%, #0d1b2a 50%, #050b14 100%);
+  color: #f8fafc;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+</style>
+
 <style scoped>
-/* 🌟 최상위 컨테이너 스타일 추가 */
 .app-container {
   min-height: 100vh;
-  background-color: #f0f9ff; /* 연한 파스텔 하늘색 */
-  color: #1f2937; /* 진한 회색 글자 */
-  padding-bottom: 30px;
+  background: linear-gradient(180deg, #1b365d 0%, #0d1b2a 50%, #050b14 100%);
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
 }
 
-/* 🌟 헤더 스타일 수정 (기존 어두운 배경 -> 흰색 배경) */
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 30px;
-  background-color: #ffffff; /* 흰색 헤더 */
-  border-bottom: 1px solid #e5e7eb; /* 연한 테두리 추가 */
-  margin-bottom: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 16px 24px;
+  background: rgba(2, 6, 23, 0.36);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-title {
+  color: #f8fafc;
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-link {
+  color: #7dd3fc;
+  font-weight: 500;
+  font-size: 13px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.nav-link:hover {
+  opacity: 0.8;
+}
+
+.divider {
+  color: #475569;
+  font-size: 12px;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
 }
 </style>
