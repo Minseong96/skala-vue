@@ -93,10 +93,12 @@ const formatWeatherCondition = (desc = '', icon = '') => {
   const text = desc.trim().toLowerCase()
 
   if (text.includes('온흐림') || text.includes('overcast')) return '흐림'
-  if (text.includes('튼구름') || text.includes('조각구름') || text.includes('broken')) return '구름많음'
+  if (text.includes('튼구름') || text.includes('조각구름') || text.includes('broken'))
+    return '구름많음'
   if (text.includes('스캐터드') || text.includes('scattered')) return '구름조금'
   if (text.includes('적은 구름') || text.includes('few')) return '대체로 맑음'
-  if (text.includes('실비') || text.includes('가벼운 비') || text.includes('약한 비')) return '약한 비'
+  if (text.includes('실비') || text.includes('가벼운 비') || text.includes('약한 비'))
+    return '약한 비'
   if (text.includes('소나기')) return '소나기'
   if (text.includes('뇌우') || text.includes('천둥')) return '천둥번개'
   if (text.includes('박무') || text.includes('안개') || text.includes('연무')) return '안개'
