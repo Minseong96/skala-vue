@@ -34,15 +34,39 @@ const cityCoordinates = {
   대구광역시: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
 }
 
+const userResolvedName = ref('')
+
 const currentCityMeta = computed(() => {
   const param = route.params.cityId
-  return (
-    cityCoordinates[param] || {
-      name: param || '알 수 없는 도시',
-      lat: 37.5665,
-      lon: 126.978,
+  const query = route.query
+
+  // 1. Check if name and coordinates exist in query parameters
+  if (query.name && query.lat && query.lon) {
+    return {
+      name: query.name,
+      lat: parseFloat(query.lat),
+      lon: parseFloat(query.lon),
     }
-  )
+  }
+
+  // 2. Predefined city lookup
+  if (cityCoordinates[param]) {
+    return cityCoordinates[param]
+  }
+
+  // 3. Fallback for city_user_geo or raw param
+  let fallbackName = param
+  if (param === 'city_user_geo') {
+    fallbackName = userResolvedName.value
+      ? `내 위치 (${userResolvedName.value})`
+      : '내 위치'
+  }
+
+  return {
+    name: fallbackName || '알 수 없는 도시',
+    lat: 37.5665,
+    lon: 126.978,
+  }
 })
 
 const formatCityTime = (timestamp, timezoneOffset = 0) => {
@@ -89,6 +113,9 @@ const fetchAllDetailData = async () => {
     ])
 
     weatherInfo.value = resWeather.data
+    if (resWeather.data && resWeather.data.name) {
+      userResolvedName.value = resWeather.data.name
+    }
     const tz = resForecast.data.city.timezone
     forecastList.value = resForecast.data.list.slice(0, 8).map((item) => ({
       time: formatCityHour(item.dt, tz),

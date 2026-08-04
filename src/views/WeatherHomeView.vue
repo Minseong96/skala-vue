@@ -167,6 +167,8 @@ const detectUserLocation = () => {
           temp: Math.round(data.main.temp),
           status: data.weather[0].description,
           icon: data.weather[0].icon,
+          lat: latitude,
+          lon: longitude,
           isUserLoc: true,
         }
 
@@ -187,6 +189,8 @@ const detectUserLocation = () => {
             sunset: formatCityTime(data.sys.sunset, data.timezone),
             status: data.weather[0].description,
             icon: data.weather[0].icon,
+            lat: latitude,
+            lon: longitude,
             isUserLoc: true,
           },
           ...extraWeatherList.value.filter((item) => item.id !== geoId),
@@ -204,6 +208,8 @@ const detectUserLocation = () => {
             id: geoId,
             name: geoName,
             hourly,
+            lat: latitude,
+            lon: longitude,
             isUserLoc: true,
           },
           ...timelineWeatherList.value.filter((item) => item.id !== geoId),
@@ -280,8 +286,19 @@ const handleSelectCard = (cityName) => {
   selectedCityInfo.value = `현재 선택된 구역: [ ${cityName} ]`
 }
 
-const handleDetail = (cityId) => {
-  router.push(`/weather/${cityId}`)
+const handleDetail = (cityId, cityObj) => {
+  if (cityObj && (cityObj.lat || cityObj.isUserLoc)) {
+    router.push({
+      path: `/weather/${cityId}`,
+      query: {
+        name: cityObj.name,
+        lat: cityObj.lat,
+        lon: cityObj.lon,
+      },
+    })
+  } else {
+    router.push(`/weather/${cityId}`)
+  }
 }
 
 const getCardBorder = (temp) => {

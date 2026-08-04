@@ -92,7 +92,7 @@ const fxType = computed(() => {
                 : '☀️ 맑고 선선한 공기'
           }}
         </span>
-        <button @click.stop="emit('click-detail', city.id || city.name)">상세보기 ›</button>
+        <button @click.stop="emit('click-detail', city.id || city.name, city)">상세보기 ›</button>
       </div>
     </div>
   </div>
