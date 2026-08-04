@@ -1207,4 +1207,79 @@ const getCardBackground = (status = '', icon = '') => {
     transform: rotate(360deg);
   }
 }
+
+/* 📱 MOBILE & TABLET RESPONSIVE OVERRIDES (< 768px & < 480px) */
+@media (max-width: 768px) {
+  .apple-weather-wrapper {
+    padding: 12px 0 40px;
+  }
+  .apple-weather-app {
+    padding: 16px 12px 20px;
+  }
+  .apple-header-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .apple-header-badges {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .apple-title {
+    font-size: 30px;
+  }
+  .apple-subtitle {
+    font-size: 12.5px;
+  }
+  .menu-tab-bar {
+    gap: 6px;
+  }
+  .tab-btn {
+    font-size: 11.5px;
+    padding: 8px 6px;
+    white-space: nowrap;
+    word-break: keep-all;
+  }
+  .side-panel-glass {
+    padding: 16px;
+  }
+  .side-city-title {
+    font-size: 20px;
+    word-break: keep-all;
+  }
+  .side-big-temp {
+    font-size: 42px;
+  }
+  .side-grid-widgets {
+    gap: 8px;
+  }
+  .w-val {
+    font-size: 12px;
+  }
+  .map-iframe-container {
+    height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .apple-title-row {
+    flex-wrap: wrap;
+  }
+  .apple-title {
+    font-size: 26px;
+  }
+  .apple-unit-pill {
+    font-size: 11.5px;
+    padding: 6px 10px;
+  }
+  .apple-location,
+  .apple-pill,
+  .geo-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  .tab-btn {
+    font-size: 11px;
+    padding: 7px 4px;
+  }
+}
 </style>

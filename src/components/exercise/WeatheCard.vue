@@ -236,6 +236,36 @@ const fxType = computed(() => {
   transform: translateX(2px);
 }
 
+/* 📱 MOBILE RESPONSIVE OVERRIDES */
+@media (max-width: 640px) {
+  .apple-weather-card {
+    padding: 2px 2px;
+  }
+  .city-title {
+    font-size: 17px;
+    flex-wrap: wrap;
+    word-break: keep-all;
+  }
+  .city-temp-big {
+    font-size: 38px;
+  }
+  .apple-card-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .condition-text {
+    font-size: 12px;
+  }
+  .range-text {
+    font-size: 11px;
+  }
+  .detail-btn {
+    font-size: 10.5px;
+    padding: 3px 8px;
+  }
+}
+
 /* 🌟 DYNAMIC ATMOSPHERE SKY OVERLAY */
 .card-sky-fx {
   position: absolute;
