@@ -1,78 +1,135 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 
-// 임시 Mock Data베이스
-const weatherData = {
-  city_01: { name: '서울특별시', temp: '28°C', status: '맑음', humidity: '55%', wind: '2.5m/s' },
-  city_02: { name: '수원시', temp: '24°C', status: '비', humidity: '80%', wind: '4.1m/s' },
-  city_03: {
-    name: 'West-lafayette',
-    temp: '10°C',
-    status: '맑음',
-    humidity: '40%',
-    wind: '3.0m/s',
-  },
-  city_04: { name: '부산광역시', temp: '26°C', status: '구름', humidity: '65%', wind: '3.5m/s' },
-  city_05: { name: '대구광역시', temp: '31°C', status: '맑음', humidity: '45%', wind: '1.8m/s' },
-  city_06: {
-    name: '제주특별자치도',
-    temp: '25°C',
-    status: '구름',
-    humidity: '70%',
-    wind: '5.2m/s',
-  },
+// 상태 변수 정의
+const weatherInfo = ref(null)
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+// 🌟 URL로 넘어오는 모든 형태의 값(city_03, West-lafayette 등)을 커버하도록 매핑 보완
+const cityCoordinates = {
+  city_01: { name: '서울특별시', lat: 37.5665, lon: 126.978 },
+  서울: { name: '서울특별시', lat: 37.5665, lon: 126.978 },
+
+  city_03: { name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
+  'West-lafayette': { name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
+  'West Lafayette': { name: 'West-lafayette', lat: 40.4259, lon: -86.9081 },
+
+  city_04: { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
+  부산: { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
+
+  city_05: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
+  대구: { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
 }
 
-// 주소창의 :cityId를 읽어와서 데이터 매칭
-const currentCity = weatherData[route.params.cityId] || {
-  name: '알 수 없는 도시',
-  temp: '-',
-  status: '-',
-  humidity: '-',
-  wind: '-',
+const currentCityMeta = cityCoordinates[route.params.cityId] || {
+  name: route.params.cityId || '알 수 없는 도시',
+  lat: 37.5665,
+  lon: 126.978,
 }
+
+// 🌟 핵심: 화면이 마운트될 때 OpenWeather API 호출!
+const fetchRealWeather = async () => {
+  isLoading.value = true
+  const API_KEY = '31df255e3ec6209feb7ed06f52a7a1f8'
+  const URL = `https://api.openweathermap.org/data/2.5/weather?lat=${currentCityMeta.lat}&lon=${currentCityMeta.lon}&appid=${API_KEY}&units=metric&lang=kr`
+
+  try {
+    const response = await axios.get(URL)
+    console.log('Axios 통신 성공 응답 전체:', response)
+    weatherInfo.value = response.data
+  } catch (error) {
+    console.error('통신 중 에러가 발생했습니다:', error)
+    errorMessage.value = '데이터를 가져오지 못했습니다. API 키나 네트워크를 확인하세요.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchRealWeather()
+})
 </script>
 
 <template>
   <div
     style="
-      padding: 20px;
+      padding: 30px 20px;
       max-width: 600px;
       margin: 0 auto;
-      background: #fff;
-      border-radius: 8px;
-      color: #333;
+      background: #ffffff;
+      border-radius: 12px;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     "
   >
-    <h2>지역별 상세 기상 관측 정보</h2>
+    <h2>🌍 실시간 OpenWeather API 관측 정보</h2>
+
+    <!-- 로딩 중일 때 -->
+    <p
+      v-if="isLoading"
+      style="text-align: center; padding: 30px; color: #2563eb; font-weight: bold; font-size: 16px"
+    >
+      🔄 실시간 날씨 데이터를 불러오는 중입니다...
+    </p>
+
+    <!-- 에러 발생 시 -->
+    <p
+      v-else-if="errorMessage"
+      style="color: #dc2626; font-weight: bold; text-align: center; padding: 30px; font-size: 16px"
+    >
+      {{ errorMessage }}
+    </p>
+
+    <!-- 데이터 로드 성공 시 -->
     <div
+      v-else-if="weatherInfo"
       style="
         margin-top: 20px;
         background: #f8fafc;
-        padding: 15px;
-        border-radius: 6px;
+        padding: 25px;
+        border-radius: 8px;
         border: 1px solid #cbd5e1;
       "
     >
-      <p>📍 <strong>지점 지역:</strong> 대한민국 {{ currentCity.name }}</p>
-      <p>🌡️ <strong>실시간 기온:</strong> {{ currentCity.temp }}</p>
-      <p>☁️ <strong>기상 현황:</strong> {{ currentCity.status }}</p>
-      <p>💧 <strong>대기 습도:</strong> {{ currentCity.humidity }}</p>
-      <p>💨 <strong>현재 풍속:</strong> {{ currentCity.wind }}</p>
+      <p style="font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #111827">
+        📍 지점 지역: {{ currentCityMeta.name }}
+      </p>
+      <p style="font-size: 16px; line-height: 1.6">
+        🌡️ <strong>현재 기온:</strong>
+        <span style="font-size: 22px; font-weight: bold; color: #b91c1c"
+          >{{ weatherInfo.main.temp }}°C</span
+        >
+        (체감 온도: {{ weatherInfo.main.feels_like }}°C)
+      </p>
+      <p style="font-size: 16px; line-height: 1.6">
+        ☁️ <strong>기상 현황:</strong> {{ weatherInfo.weather[0].description }}
+      </p>
+      <p style="font-size: 16px; line-height: 1.6">
+        💧 <strong>대기 습도:</strong> {{ weatherInfo.main.humidity }}%
+      </p>
+      <p style="font-size: 16px; line-height: 1.6">
+        💨 <strong>현재 풍속:</strong> {{ weatherInfo.wind.speed }} m/s
+      </p>
     </div>
+
     <button
       @click="router.push('/')"
       style="
-        margin-top: 20px;
-        padding: 10px 20px;
-        background: #1e293b;
+        margin-top: 30px;
+        padding: 12px 24px;
+        background: #1f2937;
         color: #fff;
         border: none;
-        border-radius: 4px;
+        border-radius: 6px;
         cursor: pointer;
+        font-weight: bold;
       "
     >
       ← 메인 대시보드로 돌아가기
