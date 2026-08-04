@@ -37,6 +37,28 @@ const isGeoLoading = ref(false)
 const updateClock = () => {
   const now = new Date()
   currentTime.value = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+
+  weatherList.value.forEach((city) => {
+    if (city.timezone !== undefined) {
+      city.localTime = getCurrentCityTime(city.timezone)
+    }
+  })
+
+  if (selectedCity.value && selectedCity.value.timezone !== undefined) {
+    selectedCity.value.localTime = getCurrentCityTime(selectedCity.value.timezone)
+  }
+}
+
+const getCurrentCityTime = (timezoneOffset = 0) => {
+  const now = new Date()
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000
+  const cityDate = new Date(utcMs + timezoneOffset * 1000)
+  const hours = cityDate.getHours()
+  const minutes = cityDate.getMinutes()
+  const period = hours >= 12 ? '오후' : '오전'
+  const displayHours = hours % 12 === 0 ? 12 : hours % 12
+  const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes
+  return `${period} ${displayHours}:${formattedMinutes}`
 }
 
 const formatCityTime = (timestamp, timezoneOffset = 0) => {
@@ -112,7 +134,8 @@ const fetchAllData = async () => {
         windDeg: data.wind?.deg || 0,
         sunrise: formatCityTime(data.sys.sunrise, data.timezone),
         sunset: formatCityTime(data.sys.sunset, data.timezone),
-        localTime: formatCityTime(data.dt, data.timezone),
+        localTime: getCurrentCityTime(data.timezone),
+        timezone: data.timezone,
         status: data.weather[0].description,
         icon: data.weather[0].icon,
         lat: citiesMeta[index].lat,
@@ -183,7 +206,8 @@ const detectUserLocation = () => {
           windDeg: data.wind?.deg || 0,
           sunrise: formatCityTime(data.sys.sunrise, data.timezone),
           sunset: formatCityTime(data.sys.sunset, data.timezone),
-          localTime: formatCityTime(data.dt, data.timezone),
+          localTime: getCurrentCityTime(data.timezone),
+          timezone: data.timezone,
           status: data.weather[0].description,
           icon: data.weather[0].icon,
           lat: latitude,
