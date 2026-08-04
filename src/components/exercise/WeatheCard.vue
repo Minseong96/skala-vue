@@ -41,7 +41,7 @@ const fxType = computed(() => {
 </script>
 
 <template>
-  <div class="apple-weather-card" @click="emit('select-card', city.name)">
+  <div class="apple-weather-card" @click="emit('select-card', city)">
     <!-- 🌟 Dynamic Apple Weather Sky Atmosphere Overlay -->
     <div :class="['card-sky-fx', fxType]">
       <!-- Sunny Lens Flare & Light Rays -->

@@ -24,9 +24,11 @@ const citiesMeta = [
 const weatherList = ref([])
 const extraWeatherList = ref([])
 const timelineWeatherList = ref([])
+const selectedCity = ref(null)
+
 const activeTab = ref('weather')
 const searchQuery = ref('')
-const selectedCityInfo = ref('카드를 터치하거나 도시를 검색하여 정보를 확인하세요.')
+const selectedCityInfo = ref('도시 카드를 선택하시면 우측 패널에 상세 날씨 분석이 표시됩니다.')
 const isLoading = ref(false)
 const errorMessage = ref('')
 const currentTime = ref('')
@@ -58,6 +60,7 @@ const formatCityHour = (dt, timezoneOffset = 0) => {
 }
 
 const formatTemp = (value) => {
+  if (value === undefined || value === null) return '-'
   const converted =
     configStore.unit === 'fahrenheit' ? Math.round((value * 9) / 5 + 32) : Math.round(value)
   return `${converted}${configStore.unitSymbol}`
@@ -87,49 +90,44 @@ const fetchAllData = async () => {
 
     weatherList.value = weatherResponses.map((res, index) => {
       const data = res.data
+      const forecast = forecastResponses[index].data
+      const tz = forecast.city.timezone
+      const hourly = forecast.list.slice(0, 8).map((item) => ({
+        time: formatCityHour(item.dt, tz),
+        temp: Math.round(item.main.temp),
+        description: item.weather[0].description,
+        icon: item.weather[0].icon,
+      }))
+
       return {
         id: citiesMeta[index].id,
         name: citiesMeta[index].name,
         temp: Math.round(data.main.temp),
         tempMax: Math.round(data.main.temp_max),
         tempMin: Math.round(data.main.temp_min),
-        localTime: formatCityTime(data.dt, data.timezone),
-        status: data.weather[0].description,
-        icon: data.weather[0].icon,
-      }
-    })
-
-    extraWeatherList.value = weatherResponses.map((res, index) => {
-      const data = res.data
-      return {
-        id: citiesMeta[index].id,
-        name: citiesMeta[index].name,
-        temp: Math.round(data.main.temp),
         feelsLike: Math.round(data.main.feels_like),
         humidity: data.main.humidity,
         pressure: data.main.pressure,
+        windSpeed: data.wind?.speed || 0,
+        windDeg: data.wind?.deg || 0,
         sunrise: formatCityTime(data.sys.sunrise, data.timezone),
         sunset: formatCityTime(data.sys.sunset, data.timezone),
+        localTime: formatCityTime(data.dt, data.timezone),
         status: data.weather[0].description,
         icon: data.weather[0].icon,
-      }
-    })
-
-    timelineWeatherList.value = forecastResponses.map((res, index) => {
-      const data = res.data
-      const timezone = data.city.timezone
-      const hourly = data.list.slice(0, 6).map((item) => ({
-        time: formatCityHour(item.dt, timezone),
-        temp: Math.round(item.main.temp),
-        description: item.weather[0].description,
-        icon: item.weather[0].icon,
-      }))
-      return {
-        id: citiesMeta[index].id,
-        name: citiesMeta[index].name,
+        lat: citiesMeta[index].lat,
+        lon: citiesMeta[index].lon,
         hourly,
       }
     })
+
+    extraWeatherList.value = weatherList.value
+    timelineWeatherList.value = weatherList.value
+
+    if (!selectedCity.value && weatherList.value.length > 0) {
+      selectedCity.value = weatherList.value[0]
+      selectedCityInfo.value = `기본 선택 도시: [ ${weatherList.value[0].name} ]`
+    }
 
     updateClock()
   } catch (error) {
@@ -165,64 +163,45 @@ const detectUserLocation = () => {
         const geoName = `내 위치 (${data.name || '현재 지점'})`
         const geoId = 'city_user_geo'
 
-        const userGeoWeatherItem = {
-          id: geoId,
-          name: geoName,
-          temp: Math.round(data.main.temp),
-          tempMax: Math.round(data.main.temp_max),
-          tempMin: Math.round(data.main.temp_min),
-          localTime: formatCityTime(data.dt, data.timezone),
-          status: data.weather[0].description,
-          icon: data.weather[0].icon,
-          lat: latitude,
-          lon: longitude,
-          isUserLoc: true,
-        }
-
-        weatherList.value = [
-          userGeoWeatherItem,
-          ...weatherList.value.filter((item) => item.id !== geoId),
-        ]
-
-        extraWeatherList.value = [
-          {
-            id: geoId,
-            name: geoName,
-            temp: Math.round(data.main.temp),
-            feelsLike: Math.round(data.main.feels_like),
-            humidity: data.main.humidity,
-            pressure: data.main.pressure,
-            sunrise: formatCityTime(data.sys.sunrise, data.timezone),
-            sunset: formatCityTime(data.sys.sunset, data.timezone),
-            status: data.weather[0].description,
-            icon: data.weather[0].icon,
-            lat: latitude,
-            lon: longitude,
-            isUserLoc: true,
-          },
-          ...extraWeatherList.value.filter((item) => item.id !== geoId),
-        ]
-
-        const hourly = forecastData.list.slice(0, 6).map((item) => ({
+        const hourly = forecastData.list.slice(0, 8).map((item) => ({
           time: formatCityHour(item.dt, tz),
           temp: Math.round(item.main.temp),
           description: item.weather[0].description,
           icon: item.weather[0].icon,
         }))
 
-        timelineWeatherList.value = [
-          {
-            id: geoId,
-            name: geoName,
-            hourly,
-            lat: latitude,
-            lon: longitude,
-            isUserLoc: true,
-          },
-          ...timelineWeatherList.value.filter((item) => item.id !== geoId),
-        ]
+        const userGeoWeatherItem = {
+          id: geoId,
+          name: geoName,
+          temp: Math.round(data.main.temp),
+          tempMax: Math.round(data.main.temp_max),
+          tempMin: Math.round(data.main.temp_min),
+          feelsLike: Math.round(data.main.feels_like),
+          humidity: data.main.humidity,
+          pressure: data.main.pressure,
+          windSpeed: data.wind?.speed || 0,
+          windDeg: data.wind?.deg || 0,
+          sunrise: formatCityTime(data.sys.sunrise, data.timezone),
+          sunset: formatCityTime(data.sys.sunset, data.timezone),
+          localTime: formatCityTime(data.dt, data.timezone),
+          status: data.weather[0].description,
+          icon: data.weather[0].icon,
+          lat: latitude,
+          lon: longitude,
+          isUserLoc: true,
+          hourly,
+        }
 
-        selectedCityInfo.value = `현재 위치 감지 완료: [ ${geoName} ]`
+        weatherList.value = [
+          userGeoWeatherItem,
+          ...weatherList.value.filter((item) => item.id !== geoId),
+        ]
+        extraWeatherList.value = weatherList.value
+        timelineWeatherList.value = weatherList.value
+
+        // Auto select user location as initial active side panel
+        selectedCity.value = userGeoWeatherItem
+        selectedCityInfo.value = `현재 위치 실시간 세팅: [ ${geoName} ]`
       } catch (err) {
         console.warn('Geolocation weather fetch failed:', err)
       } finally {
@@ -265,42 +244,42 @@ const filteredTimelineList = computed(() => {
   )
 })
 
-// 🌟 Dynamic Atmosphere Theme Gradient based on Top Weather Condition
+// 🌟 Dynamic Atmosphere Theme Gradient based on Selected City
 const currentThemeGradient = computed(() => {
-  const topItem = weatherList.value[0]
-  if (!topItem) return 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 60%, #020617 100%)'
+  const target = selectedCity.value || weatherList.value[0]
+  if (!target) return 'radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 60%, #020617 100%)'
 
-  const status = (topItem.status || '').toLowerCase()
-  const icon = topItem.icon || ''
+  const status = (target.status || '').toLowerCase()
+  const icon = target.icon || ''
 
   if (icon.endsWith('n')) {
-    // Starry Deep Night Atmosphere
     return 'radial-gradient(ellipse at 50% 0%, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.95) 55%, #020617 100%)'
   }
   if (status.includes('비') || status.includes('소나기') || status.includes('뇌우')) {
-    // Rain / Storm Cool Blue Atmosphere
     return 'radial-gradient(ellipse at 50% 0%, rgba(14, 116, 144, 0.85) 0%, rgba(15, 23, 42, 0.95) 55%, #020617 100%)'
   }
   if (status.includes('구름') || status.includes('흐림') || status.includes('안개')) {
-    // Cool Slate Cloud Atmosphere
     return 'radial-gradient(ellipse at 50% 0%, rgba(71, 85, 105, 0.85) 0%, rgba(15, 23, 42, 0.95) 55%, #020617 100%)'
   }
-  // Sunny Golden Atmosphere
   return 'radial-gradient(ellipse at 50% 0%, rgba(217, 119, 6, 0.65) 0%, rgba(30, 27, 75, 0.85) 50%, #020617 100%)'
 })
 
-const handleSelectCard = (cityName) => {
-  selectedCityInfo.value = `현재 선택된 구역: [ ${cityName} ]`
+const handleSelectCard = (cityObj) => {
+  if (cityObj && typeof cityObj === 'object') {
+    selectedCity.value = cityObj
+    selectedCityInfo.value = `선택된 도시 퀵 브리핑: [ ${cityObj.name} ]`
+  }
 }
 
 const handleDetail = (cityId, cityObj) => {
-  if (cityObj && (cityObj.lat || cityObj.isUserLoc)) {
+  const target = cityObj || selectedCity.value
+  if (target && (target.lat || target.isUserLoc)) {
     router.push({
       path: `/weather/${cityId}`,
       query: {
-        name: cityObj.name,
-        lat: cityObj.lat,
-        lon: cityObj.lon,
+        name: target.name,
+        lat: target.lat,
+        lon: target.lon,
       },
     })
   } else {
@@ -310,11 +289,11 @@ const handleDetail = (cityId, cityObj) => {
 
 const getCardBorder = (temp) => {
   if (temp === undefined || temp === null) return 'rgba(255, 255, 255, 0.2)'
-  if (temp >= 33) return 'rgba(244, 63, 94, 0.85)' // 33°C+ Extreme Heat (Vivid Red)
-  if (temp >= 28) return 'rgba(249, 115, 22, 0.85)' // 28°C~32°C Hot (Warm Orange)
-  if (temp >= 20) return 'rgba(56, 189, 248, 0.6)' // 20°C~27°C Mild (Sky Blue)
-  if (temp >= 10) return 'rgba(99, 102, 241, 0.65)' // 10°C~19°C Cool (Indigo)
-  return 'rgba(168, 85, 247, 0.75)' // <10°C Cold (Purple/Ice)
+  if (temp >= 33) return 'rgba(244, 63, 94, 0.85)'
+  if (temp >= 28) return 'rgba(249, 115, 22, 0.85)'
+  if (temp >= 20) return 'rgba(56, 189, 248, 0.6)'
+  if (temp >= 10) return 'rgba(99, 102, 241, 0.65)'
+  return 'rgba(168, 85, 247, 0.75)'
 }
 
 const getCardBackground = (status = '', icon = '') => {
@@ -335,6 +314,7 @@ const getCardBackground = (status = '', icon = '') => {
 <template>
   <div class="apple-weather-wrapper" :style="{ background: currentThemeGradient }">
     <div class="apple-weather-app">
+      <!-- Top Navigation Header -->
       <header class="apple-header">
         <div class="apple-header-top">
           <div class="apple-header-badges">
@@ -348,141 +328,290 @@ const getCardBackground = (status = '', icon = '') => {
           <span class="apple-time">{{ currentTime }}</span>
         </div>
         <div class="apple-title-row">
-          <h1 class="apple-title">날씨</h1>
+          <h1 class="apple-title">날씨 대시보드</h1>
           <button class="apple-unit-pill" @click="configStore.toggleUnit()">
             {{ configStore.unit === 'fahrenheit' ? '°F' : '°C' }} ·
             {{ configStore.unit === 'fahrenheit' ? '화씨' : '섭씨' }}
           </button>
         </div>
         <p class="apple-subtitle">
-          애플 웨더의 잔잔한 감성과 세련된 인터랙션을 담은 실시간 관측 대시보드입니다.
+          애플 웨더의 감성을 담은 데스크탑 스마트 반응형 사이드 패널 기상 대시보드입니다.
         </p>
       </header>
 
-      <div class="menu-tab-bar">
-        <button
-          :class="['tab-btn', { active: activeTab === 'weather' }]"
-          @click="activeTab = 'weather'"
-        >
-          <UIIcon name="globe" size="15" /> 실시간 날씨
-        </button>
-        <button
-          :class="['tab-btn', { active: activeTab === 'extra' }]"
-          @click="activeTab = 'extra'"
-        >
-          <UIIcon name="sun-horizon" size="15" /> 일출·일몰
-        </button>
-        <button
-          :class="['tab-btn', { active: activeTab === 'timeline' }]"
-          @click="activeTab = 'timeline'"
-        >
-          <UIIcon name="clock" size="15" /> 3시간 타임라인
-        </button>
-      </div>
-
-      <div class="apple-search-box">
-        <SearchBar v-model="searchQuery" />
-      </div>
-
-      <div v-if="isLoading" class="apple-state-view">
-        <div class="apple-spinner"></div>
-        <p>날씨 데이터를 불러오는 중...</p>
-      </div>
-
-      <div v-else-if="errorMessage" class="apple-state-view error">
-        <p>⚠️ {{ errorMessage }}</p>
-      </div>
-
-      <template v-else-if="activeTab === 'weather'">
-        <div v-if="filteredWeatherList.length === 0" class="apple-state-view">
-          <p>검색 결과가 없습니다.</p>
-        </div>
-
-        <div class="apple-cards-stack">
-          <BaseDashboardCard
-            v-for="city in filteredWeatherList"
-            :key="city.id"
-            :style="{
-              background: getCardBackground(city.status, city.icon),
-              borderColor: getCardBorder(city.temp),
-              boxShadow: city.isUserLoc ? `0 0 20px ${getCardBorder(city.temp)}` : undefined,
-            }"
-            class="apple-glass-card"
-          >
-            <WeatheCard :city="city" @select-card="handleSelectCard" @click-detail="handleDetail" />
-          </BaseDashboardCard>
-        </div>
-      </template>
-
-      <template v-else-if="activeTab === 'extra'">
-        <div v-if="filteredExtraList.length === 0" class="apple-state-view">
-          <p>검색 결과가 없습니다.</p>
-        </div>
-
-        <div class="apple-cards-stack">
-          <div v-for="item in filteredExtraList" :key="item.id" class="apple-extra-card">
-            <div class="extra-header">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <WeatherIcon :code="item.icon" size="24" />
-                <h3>{{ item.name }}</h3>
-              </div>
-              <span class="extra-badge">{{ item.isUserLoc ? '내 위치 실시간 분석' : '일조 및 체감 분석' }}</span>
-            </div>
-            <div class="extra-body">
-              <div class="extra-row">
-                <span class="label"><UIIcon name="temp" size="14" color="#38bdf8" /> 현재 / 체감</span>
-                <span class="value"
-                  >{{ formatTemp(item.temp) }} (체감 {{ formatTemp(item.feelsLike) }})</span
-                >
-              </div>
-              <div class="extra-row">
-                <span class="label"><UIIcon name="sun-horizon" size="14" color="#fbbf24" /> 일출 시각 (현지)</span>
-                <span class="value">{{ item.sunrise }}</span>
-              </div>
-              <div class="extra-row">
-                <span class="label"><UIIcon name="sunset" size="14" color="#f97316" /> 일몰 시각 (현지)</span>
-                <span class="value">{{ item.sunset }}</span>
-              </div>
-              <div class="extra-row">
-                <span class="label"><UIIcon name="droplet" size="14" color="#38bdf8" /> 습도 / 기압</span>
-                <span class="value">{{ item.humidity }}% / {{ item.pressure }}hPa</span>
-              </div>
-            </div>
+      <!-- Main Split Layout Container (Left Dashboard + Right Side Panel) -->
+      <div class="apple-dashboard-layout">
+        <!-- 👈 MAIN DASHBOARD AREA (LEFT) -->
+        <main class="apple-main-content">
+          <div class="menu-tab-bar">
+            <button
+              :class="['tab-btn', { active: activeTab === 'weather' }]"
+              @click="activeTab = 'weather'"
+            >
+              <UIIcon name="globe" size="15" /> 실시간 날씨
+            </button>
+            <button
+              :class="['tab-btn', { active: activeTab === 'extra' }]"
+              @click="activeTab = 'extra'"
+            >
+              <UIIcon name="sun-horizon" size="15" /> 일출·일몰
+            </button>
+            <button
+              :class="['tab-btn', { active: activeTab === 'timeline' }]"
+              @click="activeTab = 'timeline'"
+            >
+              <UIIcon name="clock" size="15" /> 3시간 타임라인
+            </button>
           </div>
-        </div>
-      </template>
 
-      <template v-else-if="activeTab === 'timeline'">
-        <div v-if="filteredTimelineList.length === 0" class="apple-state-view">
-          <p>검색 결과가 없습니다.</p>
-        </div>
+          <div class="apple-search-box">
+            <SearchBar v-model="searchQuery" />
+          </div>
 
-        <div class="apple-cards-stack">
-          <div
-            v-for="city in filteredTimelineList"
-            :key="city.id"
-            class="apple-timeline-container-card"
-          >
-            <div class="extra-header">
-              <h3>{{ city.name }}</h3>
-              <span class="extra-badge">{{ city.isUserLoc ? '내 위치 3시간 예보' : '3시간 단위 미래 예보' }}</span>
+          <div v-if="isLoading" class="apple-state-view">
+            <div class="apple-spinner"></div>
+            <p>날씨 데이터를 불러오는 중...</p>
+          </div>
+
+          <div v-else-if="errorMessage" class="apple-state-view error">
+            <p>⚠️ {{ errorMessage }}</p>
+          </div>
+
+          <template v-else-if="activeTab === 'weather'">
+            <div v-if="filteredWeatherList.length === 0" class="apple-state-view">
+              <p>검색 결과가 없습니다.</p>
             </div>
-            <div class="fit-tl-grid">
-              <div v-for="(hour, idx) in city.hourly" :key="idx" class="fit-tl-box">
-                <span class="fit-time">{{ hour.time }}</span>
-                <WeatherIcon :code="hour.icon" size="38" />
-                <span class="fit-temp">{{ formatTemp(hour.temp) }}</span>
-                <span class="fit-desc">{{ hour.description }}</span>
+
+            <div class="apple-cards-stack">
+              <BaseDashboardCard
+                v-for="city in filteredWeatherList"
+                :key="city.id"
+                :style="{
+                  background: getCardBackground(city.status, city.icon),
+                  borderColor: getCardBorder(city.temp),
+                  boxShadow: selectedCity?.id === city.id
+                    ? `0 0 0 2px #38bdf8, 0 0 24px ${getCardBorder(city.temp)}`
+                    : city.isUserLoc ? `0 0 16px ${getCardBorder(city.temp)}` : undefined,
+                }"
+                :class="['apple-glass-card', { active: selectedCity?.id === city.id }]"
+              >
+                <WeatheCard :city="city" @select-card="handleSelectCard" @click-detail="handleDetail" />
+              </BaseDashboardCard>
+            </div>
+          </template>
+
+          <template v-else-if="activeTab === 'extra'">
+            <div v-if="filteredExtraList.length === 0" class="apple-state-view">
+              <p>검색 결과가 없습니다.</p>
+            </div>
+
+            <div class="apple-cards-stack">
+              <div v-for="item in filteredExtraList" :key="item.id" class="apple-extra-card">
+                <div class="extra-header">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <WeatherIcon :code="item.icon" size="24" />
+                    <h3>{{ item.name }}</h3>
+                  </div>
+                  <span class="extra-badge">{{ item.isUserLoc ? '내 위치 실시간 분석' : '일조 및 체감 분석' }}</span>
+                </div>
+                <div class="extra-body">
+                  <div class="extra-row">
+                    <span class="label"><UIIcon name="temp" size="14" color="#38bdf8" /> 현재 / 체감</span>
+                    <span class="value"
+                      >{{ formatTemp(item.temp) }} (체감 {{ formatTemp(item.feelsLike) }})</span
+                    >
+                  </div>
+                  <div class="extra-row">
+                    <span class="label"><UIIcon name="sun-horizon" size="14" color="#fbbf24" /> 일출 시각 (현지)</span>
+                    <span class="value">{{ item.sunrise }}</span>
+                  </div>
+                  <div class="extra-row">
+                    <span class="label"><UIIcon name="sunset" size="14" color="#f97316" /> 일몰 시각 (현지)</span>
+                    <span class="value">{{ item.sunset }}</span>
+                  </div>
+                  <div class="extra-row">
+                    <span class="label"><UIIcon name="droplet" size="14" color="#38bdf8" /> 습도 / 기압</span>
+                    <span class="value">{{ item.humidity }}% / {{ item.pressure }}hPa</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </template>
+          </template>
 
-      <div class="apple-bottom-bar">
+          <template v-else-if="activeTab === 'timeline'">
+            <div v-if="filteredTimelineList.length === 0" class="apple-state-view">
+              <p>검색 결과가 없습니다.</p>
+            </div>
+
+            <div class="apple-cards-stack">
+              <div
+                v-for="city in filteredTimelineList"
+                :key="city.id"
+                class="apple-timeline-container-card"
+              >
+                <div class="extra-header">
+                  <h3>{{ city.name }}</h3>
+                  <span class="extra-badge">{{ city.isUserLoc ? '내 위치 3시간 예보' : '3시간 단위 미래 예보' }}</span>
+                </div>
+                <div class="fit-tl-grid">
+                  <div v-for="(hour, idx) in city.hourly" :key="idx" class="fit-tl-box">
+                    <span class="fit-time">{{ hour.time }}</span>
+                    <WeatherIcon :code="hour.icon" size="38" />
+                    <span class="fit-temp">{{ formatTemp(hour.temp) }}</span>
+                    <span class="fit-desc">{{ hour.description }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </main>
+
+        <!-- 👉 DESKTOP SIDE PANEL (RIGHT SIDEBAR) -->
+        <aside class="apple-side-panel">
+          <div v-if="selectedCity" class="side-panel-glass">
+            <!-- Side Panel Hero Weather Section -->
+            <div class="side-hero-card">
+              <div class="side-hero-top">
+                <WeatherIcon :code="selectedCity.icon || '01d'" size="56" />
+                <span v-if="selectedCity.isUserLoc" class="side-user-tag">📍 내 위치</span>
+              </div>
+              <h2 class="side-city-title">{{ selectedCity.name }}</h2>
+              <div class="side-big-temp">{{ formatTemp(selectedCity.temp) }}</div>
+              <p class="side-status-desc">{{ selectedCity.status }}</p>
+              <p class="side-feels-desc">
+                체감 {{ formatTemp(selectedCity.feelsLike) }} · 최고 {{ formatTemp(selectedCity.tempMax) }} / 최저 {{ formatTemp(selectedCity.tempMin) }}
+              </p>
+            </div>
+
+            <!-- Side Panel Hourly Forecast Widget -->
+            <div v-if="selectedCity.hourly && selectedCity.hourly.length > 0" class="side-widget-box">
+              <div class="side-widget-title">
+                <UIIcon name="clock" size="14" color="#38bdf8" />
+                <span>시간대별 예보 (현지)</span>
+              </div>
+              <div class="side-hourly-scroll">
+                <div v-for="(h, idx) in selectedCity.hourly" :key="idx" class="side-hourly-item">
+                  <span class="side-h-time">{{ h.time }}</span>
+                  <WeatherIcon :code="h.icon" size="30" />
+                  <span class="side-h-temp">{{ formatTemp(h.temp) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Side Panel 2x2 Weather Quick Details Grid -->
+            <div class="side-grid-widgets">
+              <!-- Sunrise & Sunset -->
+              <div class="side-mini-widget">
+                <div class="side-w-header">
+                  <UIIcon name="sun-horizon" size="14" color="#fbbf24" />
+                  <span>일출·일몰</span>
+                </div>
+                <div class="side-w-val-row">
+                  <div>
+                    <span class="w-sub">일출</span>
+                    <span class="w-val">{{ selectedCity.sunrise || '-' }}</span>
+                  </div>
+                  <div>
+                    <span class="w-sub">일몰</span>
+                    <span class="w-val">{{ selectedCity.sunset || '-' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Humidity & Pressure -->
+              <div class="side-mini-widget">
+                <div class="side-w-header">
+                  <UIIcon name="droplet" size="14" color="#38bdf8" />
+                  <span>습도·기압</span>
+                </div>
+                <div class="side-w-val-row">
+                  <div>
+                    <span class="w-sub">습도</span>
+                    <span class="w-val">{{ selectedCity.humidity }}%</span>
+                  </div>
+                  <div>
+                    <span class="w-sub">기압</span>
+                    <span class="w-val">{{ selectedCity.pressure }}hPa</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Wind Speed -->
+              <div class="side-mini-widget">
+                <div class="side-w-header">
+                  <UIIcon name="wind" size="14" color="#38bdf8" />
+                  <span>바람 관측</span>
+                </div>
+                <div class="side-w-val-row">
+                  <div>
+                    <span class="w-sub">풍속</span>
+                    <span class="w-val">{{ selectedCity.windSpeed }}m/s</span>
+                  </div>
+                  <div>
+                    <span class="w-sub">풍향</span>
+                    <span class="w-val">{{ selectedCity.windDeg }}°</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Temp Range -->
+              <div class="side-mini-widget">
+                <div class="side-w-header">
+                  <UIIcon name="temp" size="14" color="#f97316" />
+                  <span>기온 범위</span>
+                </div>
+                <div class="side-w-val-row">
+                  <div>
+                    <span class="w-sub">최고</span>
+                    <span class="w-val">{{ formatTemp(selectedCity.tempMax) }}</span>
+                  </div>
+                  <div>
+                    <span class="w-sub">최저</span>
+                    <span class="w-val">{{ formatTemp(selectedCity.tempMin) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Side Panel Google Map Location Widget -->
+            <div v-if="selectedCity.lat && selectedCity.lon" class="side-map-widget">
+              <div class="side-widget-title" style="margin-bottom: 8px;">
+                <UIIcon name="location" size="14" color="#38bdf8" />
+                <span>구글 맵 위치 (Google Maps)</span>
+                <span class="map-coord-badge">{{ selectedCity.lat.toFixed(2) }}°, {{ selectedCity.lon.toFixed(2) }}°</span>
+              </div>
+              <div class="map-iframe-container">
+                <iframe
+                  :key="`${selectedCity.lat}-${selectedCity.lon}`"
+                  class="google-map-iframe"
+                  :src="`https://maps.google.com/maps?q=${selectedCity.lat},${selectedCity.lon}&hl=ko&z=11&output=embed`"
+                  loading="lazy"
+                  allowfullscreen
+                  referrerpolicy="no-referrer-when-downgrade"
+                ></iframe>
+              </div>
+            </div>
+
+            <!-- Full Detail Page Navigation Button -->
+            <button class="side-detail-btn" @click="handleDetail(selectedCity.id, selectedCity)">
+              <span>전체 상세 분석 페이지 이동</span>
+              <span class="arrow">›</span>
+            </button>
+          </div>
+
+          <!-- Fallback when no city selected -->
+          <div v-else class="side-panel-placeholder">
+            <UIIcon name="globe" size="32" color="#94a3b8" />
+            <p>대시보드에서 도시 카드를 클릭하면 퀵 상세 패널이 표시됩니다.</p>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Bottom Status Bar -->
+      <footer class="apple-bottom-bar">
         <span class="apple-dot"></span>
         <span class="apple-status-msg">{{ selectedCityInfo }}</span>
-      </div>
+      </footer>
     </div>
   </div>
 </template>
@@ -498,15 +627,15 @@ const getCardBackground = (status = '', icon = '') => {
 }
 
 .apple-weather-app {
-  width: min(100%, 760px);
+  width: min(100%, 1280px);
   min-height: 100vh;
-  padding: 24px 18px 28px;
+  padding: 24px 20px 28px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
   color: #f8fafc;
 }
 
 .apple-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   padding: 0 4px;
 }
 
@@ -579,7 +708,7 @@ const getCardBackground = (status = '', icon = '') => {
 }
 
 .apple-title {
-  font-size: 40px;
+  font-size: 38px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.04em;
@@ -610,6 +739,28 @@ const getCardBackground = (status = '', icon = '') => {
   margin: 0;
 }
 
+/* 🌟 DASHBOARD SPLIT GRID LAYOUT (Main + Side Panel) */
+.apple-dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .apple-dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr 390px;
+    align-items: start;
+  }
+}
+
+.apple-main-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab Bar */
 .menu-tab-bar {
   display: flex;
   gap: 8px;
@@ -647,6 +798,7 @@ const getCardBackground = (status = '', icon = '') => {
   gap: 16px;
 }
 
+/* Extra & Timeline Cards */
 .apple-extra-card,
 .apple-timeline-container-card {
   background: rgba(15, 23, 42, 0.65);
@@ -752,12 +904,270 @@ const getCardBackground = (status = '', icon = '') => {
   line-height: 1.3;
 }
 
+/* 🌟 SIDEBAR QUICK DETAIL PANEL */
+.apple-side-panel {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .apple-side-panel {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
+}
+
+.side-panel-glass {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 26px;
+  padding: 22px;
+  backdrop-filter: blur(28px);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Side Hero Section */
+.side-hero-card {
+  text-align: center;
+  padding: 14px 10px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.side-hero-top {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.side-user-tag {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.side-city-title {
+  margin: 4px 0 2px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.side-big-temp {
+  font-size: 52px;
+  font-weight: 300;
+  color: #ffffff;
+  line-height: 1;
+  margin: 6px 0;
+  letter-spacing: -0.04em;
+}
+
+.side-status-desc {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.side-feels-desc {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Side Widget Box (Hourly) */
+.side-widget-box {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.side-widget-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #93c5fd;
+  margin-bottom: 12px;
+}
+
+.side-hourly-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.side-hourly-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.side-hourly-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+}
+
+.side-hourly-item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  min-width: 58px;
+}
+
+.side-h-time {
+  font-size: 10px;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.side-h-temp {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Side 2x2 Grid Widgets */
+.side-grid-widgets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.side-mini-widget {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.side-w-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.side-w-val-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Google Map Location Widget */
+.side-map-widget {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map-coord-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+.map-iframe-container {
+  width: 100%;
+  height: 175px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.google-map-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  filter: contrast(1.05) saturate(1.1);
+}
+
+.w-sub {
+  display: block;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.w-val {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Navigation CTA Button */
+.side-detail-btn {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.8) 0%, rgba(14, 116, 144, 0.8) 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  transition: all 0.25s ease;
+}
+
+.side-detail-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
+  border-color: rgba(56, 189, 248, 0.8);
+}
+
+.side-detail-btn .arrow {
+  font-size: 16px;
+}
+
+.side-panel-placeholder {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 40px 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Bottom Bar */
 .apple-bottom-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 20px;
-  padding: 12px 14px;
+  margin-top: 24px;
+  padding: 12px 16px;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.1);

@@ -283,6 +283,26 @@ onMounted(() => {
             </div>
           </div>
         </div>
+
+        <!-- Google Maps Location Widget in Detail View -->
+        <div v-if="currentCityMeta.lat && currentCityMeta.lon" class="widget-card detail-map-widget">
+          <div class="widget-header" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="widget-icon"><UIIcon name="location" size="18" color="#38bdf8" /></span>
+              <span class="widget-label">구글 맵 위치 지도 (Google Maps)</span>
+            </div>
+            <span class="map-coord-tag">{{ currentCityMeta.lat.toFixed(4) }}° N, {{ currentCityMeta.lon.toFixed(4) }}° E</span>
+          </div>
+          <div class="detail-map-container">
+            <iframe
+              :key="`${currentCityMeta.lat}-${currentCityMeta.lon}`"
+              class="detail-google-map-iframe"
+              :src="`https://maps.google.com/maps?q=${currentCityMeta.lat},${currentCityMeta.lon}&hl=ko&z=12&output=embed`"
+              loading="lazy"
+              allowfullscreen
+            ></iframe>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -572,6 +592,38 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+/* Google Maps Widget in Detail View */
+.detail-map-widget {
+  margin-top: 16px;
+}
+
+.map-coord-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.detail-map-container {
+  width: 100%;
+  height: 240px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.detail-google-map-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  filter: contrast(1.05) saturate(1.1);
 }
 
 .sub-label {
